@@ -13,9 +13,11 @@ const App = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [loading, setLoading] = React.useState(false);
+  const [loadingData, setLoadingData] = useState(true);
   const recordsPerPage = 10;
 
   useEffect(() => {
+    setLoadingData(true);
     fetch("http://localhost:4000/api/getnumberadditionstatus")
       .then((res) => {
         if (!res.ok) {
@@ -32,6 +34,9 @@ const App = () => {
       })
       .catch((err) => {
         setError(err.message);
+      })
+      .finally(() => {
+        setLoadingData(false);
       });
   }, []);
 
@@ -119,141 +124,31 @@ const App = () => {
     //   });
   };
 
-  const styles = {
-    container: {
-      fontFamily: "Segoe UI, sans-serif",
-      padding: "30px",
-      backgroundColor: "#f9f9f9",
-      minHeight: "100vh",
-    },
-    header: {
-      textAlign: "center",
-      marginBottom: "20px",
-      color: "#333",
-    },
-    filterBar: {
-      textAlign: "left",
-      marginBottom: "20px",
-    },
-    select: {
-      padding: "8px",
-      fontSize: "16px",
-      borderRadius: "5px",
-      border: "1px solid #ccc",
-    },
-    table: {
-      width: "100%",
-      borderCollapse: "collapse",
-      backgroundColor: "#fff",
-      boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-    },
-    th: {
-      padding: "12px",
-      backgroundColor: "#007BFF",
-      color: "#fff",
-      border: "1px solid #ddd",
-      textAlign: "left",
-    },
-    td: {
-      padding: "12px",
-      border: "1px solid #ddd",
-      color: "#333",
-    },
-    statusAdded: {
-      color: "green",
-      fontWeight: "bold",
-    },
-    statusNotAdded: {
-      color: "red",
-      fontWeight: "bold",
-    },
-    statusPending: {
-      color: "blue",
-      fontWeight: "bold",
-    },
-    error: {
-      color: "red",
-      textAlign: "center",
-      fontSize: "18px",
-    },
-    infoText: {
-      textAlign: "center",
-      marginBottom: "10px",
-      fontWeight: "500",
-    },
-    stripedRow: {
-      backgroundColor: "#f2f2f2",
-    },
-    pagination: {
-      marginTop: "20px",
-      textAlign: "center",
-    },
-    button: {
-      margin: "0 5px",
-      padding: "8px 16px",
-      border: "none",
-      backgroundColor: "#007bff",
-      color: "white",
-      borderRadius: "5px",
-      cursor: "pointer",
-    },
-    disabledButton: {
-      backgroundColor: "#aaa",
-      cursor: "not-allowed",
-    },
-    modalOverlay: {
-      position: "fixed",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: "rgba(0,0,0,0.5)",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      zIndex: 999,
-    },
-    modal: {
-      backgroundColor: "#fff",
-      padding: "30px",
-      borderRadius: "10px",
-      boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
-      minWidth: "300px",
-      maxWidth: "90%",
-    },
-    input: {
-      width: "100%",
-      padding: "10px",
-      marginTop: "10px",
-      marginBottom: "20px",
-      fontSize: "16px",
-      borderRadius: "5px",
-      border: "1px solid #ccc",
-    },
-    modalButton: {
-      margin: "0 5px",
-      padding: "8px 16px",
-      border: "none",
-      borderRadius: "5px",
-      cursor: "pointer",
-      backgroundColor: "#007bff",
-      color: "white",
-    },
-    cancelButton: {
-      backgroundColor: "#aaa",
-      color: "#fff",
-      marginLeft: "10px",
-    },
-    topButtons: {
-      marginBottom: "20px",
-      display: "flex",
-      gap: "10px",
-    },
-  };
+  const filteredValues = currentData?.filter((item, id) => {
+    return item.child_status === statusFilter;
+  });
+
+  console.log("status filter------------->", statusFilter);
+  console.log("filteredValues-=---------->", filteredValues);
 
   return (
     <div style={styles.container}>
       <h1 style={styles.header}>Number Addition Status</h1>
+      <div style={{ textAlign: "center", marginTop: "20px" }}>
+        <button
+          style={{
+            padding: "8px 16px",
+            border: "none",
+            // backgroundColor: "#007bff",
+            color: "black",
+            borderRadius: "5px",
+            cursor: "pointer",
+          }}
+          onClick={() => window.location.reload()}
+        >
+          Refresh 🔄
+        </button>
+      </div>
 
       <div style={styles.topButtons}>
         <button style={styles.button} onClick={handleSyncClick}>
@@ -264,30 +159,46 @@ const App = () => {
         </button>
       </div>
 
-      {error ? (
+      {loadingData ? (
+        <p style={styles.loading}>Loading data...</p>
+      ) : error ? (
         <p style={styles.error}>{error}</p>
       ) : (
         <>
-          <div style={styles.filterBar}>
-            <label>
-              <b>Filter by Status:</b>
-              <select
-                style={styles.select}
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-              >
-                <option value="all">All</option>
-                <option value="added">Added</option>
-                <option value="pending">Pending</option>
-                <option value="not_added">Not Added</option>
-              </select>
-            </label>
+          <div style={{ display: "flex" }}>
+            <div style={styles.filterBar}>
+              <label>
+                <b>Select VM:</b>
+                <select style={{ padding: "8px", borderRadius: "5px" }}>
+                  {vmOptions.map((vm, index) => (
+                    <option key={index} value={vm.value}>
+                      {vm.text}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div style={styles.filterBar}>
+              <label>
+                <b>Status:</b>
+                <select
+                  style={styles.select}
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <option value="all">All</option>
+                  <option value="added">Added</option>
+                  <option value="pending">Pending</option>
+                  <option value="not added">Not Added</option>
+                </select>
+              </label>
+            </div>
           </div>
-
           <p style={styles.infoText}>Total Records: {filteredData.length}</p>
+
           <table style={styles.table}>
             <thead>
               <tr>
@@ -300,32 +211,63 @@ const App = () => {
               </tr>
             </thead>
             <tbody>
-              {currentData.map((item, index) => (
-                <tr
-                  key={item._id}
-                  style={index % 2 === 0 ? styles.stripedRow : {}}
-                >
-                  <td style={styles.td}>{item.groupname}</td>
-                  <td style={styles.td}>{item.child_number}</td>
-                  <td
-                    style={{
-                      ...styles.td,
-                      ...(item.child_status === "added"
-                        ? styles.statusAdded
-                        : item.child_status === "pending"
-                        ? styles.statusPending
-                        : styles.statusNotAdded),
-                    }}
-                  >
-                    {item.child_status}
-                  </td>
-                  <td style={styles.td}>{item.child_remark}</td>
-                  <td style={styles.td}>{item.parent_isadmin ? "✅" : "❌"}</td>
-                  <td style={styles.td}>
-                    {new Date(item.child_addedon).toLocaleString()}
-                  </td>
-                </tr>
-              ))}
+              {statusFilter !== "all"
+                ? filteredValues.map((item, index) => (
+                    <tr
+                      key={item._id}
+                      style={index % 2 === 0 ? styles.stripedRow : {}}
+                    >
+                      <td style={styles.td}>{item.groupname}</td>
+                      <td style={styles.td}>{item.child_number}</td>
+                      <td
+                        style={{
+                          ...styles.td,
+                          ...(item.child_status === "added"
+                            ? styles.statusAdded
+                            : item.child_status == "pending"
+                            ? styles.statusPending
+                            : styles.statusNotAdded),
+                        }}
+                      >
+                        {item.child_status}
+                      </td>
+                      <td style={styles.td}>{item.child_remark}</td>
+                      <td style={styles.td}>
+                        {item.parent_isadmin ? "✅" : "❌"}
+                      </td>
+                      <td style={styles.td}>
+                        {new Date(item.child_addedon).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))
+                : currentData.map((item, index) => (
+                    <tr
+                      key={item._id}
+                      style={index % 2 === 0 ? styles.stripedRow : {}}
+                    >
+                      <td style={styles.td}>{item.groupname}</td>
+                      <td style={styles.td}>{item.child_number}</td>
+                      <td
+                        style={{
+                          ...styles.td,
+                          ...(item.child_status === "added"
+                            ? styles.statusAdded
+                            : item.child_status == "pending"
+                            ? styles.statusPending
+                            : styles.statusNotAdded),
+                        }}
+                      >
+                        {item.child_status}
+                      </td>
+                      <td style={styles.td}>{item.child_remark}</td>
+                      <td style={styles.td}>
+                        {item.parent_isadmin ? "✅" : "❌"}
+                      </td>
+                      <td style={styles.td}>
+                        {new Date(item.child_addedon).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
             </tbody>
           </table>
 
@@ -434,3 +376,174 @@ const App = () => {
 };
 
 export default App;
+
+const vmOptions = [
+  { value: "vm1", text: "vm1" },
+  { value: "vm2", text: "vm2" },
+  { value: "vm3", text: "vm3" },
+  { value: "vm4", text: "vm4" },
+  { value: "vm5", text: "vm5" },
+  { value: "vm6", text: "vm6" },
+  { value: "vm7", text: "vm7" },
+  { value: "vm8", text: "vm8" },
+  { value: "vm9", text: "vm9" },
+  { value: "vm10", text: "vm10" },
+  { value: "vm11", text: "vm11" },
+  { value: "vm12", text: "vm12" },
+  { value: "vm13", text: "vm13" },
+  { value: "vm14", text: "vm14" },
+  { value: "vm15", text: "vm15" },
+  { value: "vm16", text: "vm16" },
+  { value: "vm17", text: "vm17" },
+  { value: "vm18", text: "vm18" },
+  { value: "vm19", text: "vm19" },
+  { value: "vm20", text: "vm20" },
+  { value: "vm21", text: "vm21" },
+  { value: "vm22", text: "vm22" },
+  { value: "vm23", text: "vm23" },
+  { value: "vm24", text: "vm24" },
+  { value: "vm25", text: "vm25" },
+  { value: "vm26", text: "vm26" },
+  { value: "vm27", text: "vm27" },
+  { value: "vm28", text: "vm28" },
+  { value: "vm29", text: "vm29" },
+  { value: "vm30", text: "vm30" },
+];
+
+const styles = {
+  container: {
+    fontFamily: "Segoe UI, sans-serif",
+    padding: "30px",
+    backgroundColor: "#f9f9f9",
+    minHeight: "100vh",
+  },
+  header: {
+    textAlign: "center",
+    marginBottom: "20px",
+    color: "#333",
+  },
+  filterBar: {
+    textAlign: "left",
+    marginBottom: "20px",
+  },
+  select: {
+    padding: "8px",
+    fontSize: "16px",
+    borderRadius: "5px",
+    border: "1px solid #ccc",
+  },
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+    backgroundColor: "#fff",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+  },
+  th: {
+    padding: "12px",
+    backgroundColor: "#007BFF",
+    color: "#fff",
+    border: "1px solid #ddd",
+    textAlign: "left",
+  },
+  td: {
+    padding: "12px",
+    border: "1px solid #ddd",
+    color: "#333",
+  },
+  statusAdded: {
+    color: "green",
+    fontWeight: "bold",
+  },
+  statusNotAdded: {
+    color: "red",
+    fontWeight: "bold",
+  },
+  statusPending: {
+    color: "blue",
+    fontWeight: "bold",
+  },
+  error: {
+    color: "red",
+    textAlign: "center",
+    fontSize: "18px",
+  },
+  infoText: {
+    textAlign: "center",
+    marginBottom: "10px",
+    fontWeight: "500",
+  },
+  stripedRow: {
+    backgroundColor: "#f2f2f2",
+  },
+  pagination: {
+    marginTop: "20px",
+    textAlign: "center",
+  },
+  button: {
+    margin: "0 5px",
+    padding: "8px 16px",
+    border: "none",
+    backgroundColor: "#007bff",
+    color: "white",
+    borderRadius: "5px",
+    cursor: "pointer",
+  },
+  disabledButton: {
+    backgroundColor: "#aaa",
+    cursor: "not-allowed",
+  },
+  modalOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 999,
+  },
+  modal: {
+    backgroundColor: "#fff",
+    padding: "30px",
+    borderRadius: "10px",
+    boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
+    minWidth: "300px",
+    maxWidth: "90%",
+  },
+  input: {
+    width: "100%",
+    padding: "10px",
+    marginTop: "10px",
+    marginBottom: "20px",
+    fontSize: "16px",
+    borderRadius: "5px",
+    border: "1px solid #ccc",
+  },
+  modalButton: {
+    margin: "0 5px",
+    padding: "8px 16px",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
+    backgroundColor: "#007bff",
+    color: "white",
+  },
+  cancelButton: {
+    backgroundColor: "#aaa",
+    color: "#fff",
+    marginLeft: "10px",
+  },
+  topButtons: {
+    marginBottom: "20px",
+    display: "flex",
+    gap: "10px",
+  },
+  loading: {
+    fontSize: "16px",
+    textAlign: "center",
+    color: "#333",
+    padding: "20px",
+  },
+};
