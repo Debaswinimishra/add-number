@@ -99,25 +99,24 @@ const App = () => {
       "JSON.stringify({ number: fullNumber })------------------>",
       JSON.stringify({ number: fullNumber })
     );
-    // fetch("http://localhost:4000/api/addnumbertogroups",
-    //   {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //   },
-    //   body: JSON.stringify({ number: fullNumber }),
-    // })
-    //   .then((res) => {
-    //     if (!res.ok) throw new Error("Failed to add number");
-    //     return res.json();
-    //   })
-    //   .then((data) => {
-    //     alert("Phone number submitted successfully.");
-    //     setShowAddModal(false);
-    //   })
-    //   .catch((err) => {
-    //     alert("Error: " + err.message);
-    //   });
+    fetch("http://localhost:4000/api/addnumbertogroups", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ number: fullNumber }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to add number");
+        return res.json();
+      })
+      .then((data) => {
+        alert("Phone number submitted successfully.");
+        setShowAddModal(false);
+      })
+      .catch((err) => {
+        alert("Error: " + err.message);
+      });
   };
 
   const styles = {
