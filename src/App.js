@@ -6,6 +6,13 @@ const App = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
 
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [loading, setLoading] = React.useState(false);
   const recordsPerPage = 10;
 
   useEffect(() => {
@@ -28,7 +35,6 @@ const App = () => {
       });
   }, []);
 
-  // Filtered data based on status
   const filteredData =
     statusFilter === "all"
       ? data
@@ -44,6 +50,53 @@ const App = () => {
     startIndex,
     startIndex + recordsPerPage
   );
+
+  const handleSyncClick = () => {
+    setShowSyncModal(true);
+    setPasswordInput("");
+    setPasswordError("");
+  };
+
+  const handleAddClick = () => {
+    setShowAddModal(true);
+    setPhoneNumber("");
+  };
+
+  const handlePasswordSubmit = () => {
+    if (passwordInput === "ThinkZone@2025") {
+      setLoading(true);
+      fetch("http://localhost:4000/api/syncallgroups")
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("API request failed");
+          }
+          return response.json();
+        })
+        .then((data) => {
+          alert("Password correct! Sync started.\n" + JSON.stringify(data));
+          setShowSyncModal(false);
+          setPasswordError("");
+        })
+        .catch((error) => {
+          alert("Sync failed: " + error.message);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    } else {
+      setPasswordError("Incorrect password");
+    }
+  };
+
+  const handlePhoneNumberSubmit = () => {
+    if (phoneNumber.trim() === "") {
+      alert("Please enter a phone number.");
+      return;
+    }
+    alert("Phone number submitted: " + phoneNumber);
+    setShowAddModal(false);
+    // Add number logic here
+  };
 
   const styles = {
     container: {
@@ -123,11 +176,69 @@ const App = () => {
       backgroundColor: "#aaa",
       cursor: "not-allowed",
     },
+    modalOverlay: {
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 999,
+    },
+    modal: {
+      backgroundColor: "#fff",
+      padding: "30px",
+      borderRadius: "10px",
+      boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
+      minWidth: "300px",
+      maxWidth: "90%",
+    },
+    input: {
+      width: "100%",
+      padding: "10px",
+      marginTop: "10px",
+      marginBottom: "20px",
+      fontSize: "16px",
+      borderRadius: "5px",
+      border: "1px solid #ccc",
+    },
+    modalButton: {
+      margin: "0 5px",
+      padding: "8px 16px",
+      border: "none",
+      borderRadius: "5px",
+      cursor: "pointer",
+      backgroundColor: "#007bff",
+      color: "white",
+    },
+    cancelButton: {
+      backgroundColor: "#aaa",
+      color: "#fff",
+      marginLeft: "10px",
+    },
+    topButtons: {
+      marginBottom: "20px",
+      display: "flex",
+      gap: "10px",
+    },
   };
 
   return (
     <div style={styles.container}>
       <h1 style={styles.header}>Number Addition Status</h1>
+
+      <div style={styles.topButtons}>
+        <button style={styles.button} onClick={handleSyncClick}>
+          Sync
+        </button>
+        <button style={styles.button} onClick={handleAddClick}>
+          Add Number
+        </button>
+      </div>
+
       {error ? (
         <p style={styles.error}>{error}</p>
       ) : (
@@ -140,7 +251,7 @@ const App = () => {
                 value={statusFilter}
                 onChange={(e) => {
                   setStatusFilter(e.target.value);
-                  setCurrentPage(1); // Reset to first page on filter change
+                  setCurrentPage(1);
                 }}
               >
                 <option value="all">All</option>
@@ -190,7 +301,6 @@ const App = () => {
             </tbody>
           </table>
 
-          {/* Pagination Controls */}
           <div style={styles.pagination}>
             <button
               style={{
@@ -219,6 +329,77 @@ const App = () => {
             </button>
           </div>
         </>
+      )}
+
+      {/* Sync Modal */}
+      {showSyncModal && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modal}>
+            <h3>Enter Sync Password</h3>
+            <input
+              type="password"
+              style={styles.input}
+              placeholder="Enter password"
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+            />
+            {passwordError && (
+              <p style={{ color: "red", marginTop: "-10px" }}>
+                {passwordError}
+              </p>
+            )}
+            <div>
+              <button style={styles.modalButton} onClick={handlePasswordSubmit}>
+                Submit
+              </button>
+              <button
+                style={{ ...styles.modalButton, ...styles.cancelButton }}
+                onClick={() => setShowSyncModal(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Number Modal */}
+      {showAddModal && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modal}>
+            <h3>Enter Alternate Phone Number</h3>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <input
+                type="text"
+                style={styles.input}
+                placeholder="+91XXXXXXXXXX"
+                value={`+91${phoneNumber}`}
+                onChange={(e) => {
+                  const input = e.target.value.replace(/\D/g, "");
+                  const numberOnly = input.startsWith("91")
+                    ? input.slice(2)
+                    : input;
+                  if (numberOnly.length <= 10) setPhoneNumber(numberOnly);
+                }}
+              />
+            </div>
+            <div>
+              <button
+                style={styles.modalButton}
+                onClick={handlePhoneNumberSubmit}
+                disabled={phoneNumber.length !== 10}
+              >
+                Submit
+              </button>
+              <button
+                style={{ ...styles.modalButton, ...styles.cancelButton }}
+                onClick={() => setShowAddModal(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
