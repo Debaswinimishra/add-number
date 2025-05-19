@@ -167,6 +167,10 @@ const App = () => {
       color: "red",
       fontWeight: "bold",
     },
+    statusPending: {
+      color: "blue",
+      fontWeight: "bold",
+    },
     error: {
       color: "red",
       textAlign: "center",
@@ -277,6 +281,7 @@ const App = () => {
               >
                 <option value="all">All</option>
                 <option value="added">Added</option>
+                <option value="pending">Pending</option>
                 <option value="not_added">Not Added</option>
               </select>
             </label>
@@ -307,6 +312,8 @@ const App = () => {
                       ...styles.td,
                       ...(item.child_status === "added"
                         ? styles.statusAdded
+                        : item.child_status === "pending"
+                        ? styles.statusPending
                         : styles.statusNotAdded),
                     }}
                   >
