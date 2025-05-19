@@ -93,9 +93,31 @@ const App = () => {
       alert("Please enter a phone number.");
       return;
     }
-    alert("Phone number submitted: " + phoneNumber);
-    setShowAddModal(false);
-    // Add number logic here
+
+    const fullNumber = "91" + phoneNumber;
+    console.log(
+      "JSON.stringify({ number: fullNumber })------------------>",
+      JSON.stringify({ number: fullNumber })
+    );
+    // fetch("http://localhost:4000/api/addnumbertogroups",
+    //   {
+    //   method: "POST",
+    //   headers: {
+    //     "Content-Type": "application/json",
+    //   },
+    //   body: JSON.stringify({ number: fullNumber }),
+    // })
+    //   .then((res) => {
+    //     if (!res.ok) throw new Error("Failed to add number");
+    //     return res.json();
+    //   })
+    //   .then((data) => {
+    //     alert("Phone number submitted successfully.");
+    //     setShowAddModal(false);
+    //   })
+    //   .catch((err) => {
+    //     alert("Error: " + err.message);
+    //   });
   };
 
   const styles = {
@@ -335,7 +357,7 @@ const App = () => {
       {showSyncModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
-            <h3>Enter Sync Password</h3>
+            <h3>Enter Password</h3>
             <input
               type="password"
               style={styles.input}
@@ -367,7 +389,7 @@ const App = () => {
       {showAddModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
-            <h3>Enter Alternate Phone Number</h3>
+            <h3>Enter Recovery Phone Number</h3>
             <div style={{ display: "flex", alignItems: "center" }}>
               <input
                 type="text"
