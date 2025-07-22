@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
 const districtBlockData = {
   Khordha: ["Bhubaneswar", "Jatni", "Balianta"],
@@ -69,8 +69,6 @@ const App = () => {
       block: selectedBlock,
     };
 
-    console.log("Submitting:", payload);
-
     fetch("http://localhost:4000/api/addnumbertogroups", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -94,6 +92,9 @@ const App = () => {
       <div style={styles.headerContainer}>
         <h1 style={styles.header}>Block-Wise Number Addition</h1>
         <div style={styles.headerActions}>
+          <button style={styles.primaryButton} onClick={handleSyncClick}>
+            Sync Groups
+          </button>
           <button
             style={styles.refreshButton}
             onClick={() => window.location.reload()}
@@ -144,9 +145,6 @@ const App = () => {
         </div>
 
         <div style={styles.topButtons}>
-          <button style={styles.primaryButton} onClick={handleSyncClick}>
-            Sync Groups
-          </button>
           <button style={styles.primaryButton} onClick={handleAddClick}>
             Add Number
           </button>
