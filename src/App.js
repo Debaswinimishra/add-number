@@ -69,6 +69,7 @@ const App = () => {
         const udiseCode =
           row.udise_code ||
           row.udice_code ||
+          row.Udise_Code ||
           row.UDISE_CODE ||
           row.UDICE_CODE ||
           row["Udise Code"] ||
