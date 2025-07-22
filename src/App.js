@@ -1,8 +1,16 @@
 import React, { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import districtJson from "../src/DistrictData.json";
+// import {
+//   save_image,
+//   update_image,
+//   get_image,
+//   delete_image,
+// } from "./DashboardSlider.thunk";
+import { find_group } from "./AppService";
 
 const App = () => {
+  const REACT_APP_BASE_URL = process.env.REACT_APP_BASE_URL;
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedBlock, setSelectedBlock] = useState("");
   const [showSyncModal, setShowSyncModal] = useState(false);
@@ -23,7 +31,7 @@ const App = () => {
   const handlePasswordSubmit = () => {
     if (passwordInput === "ThinkZone@2025") {
       setLoading(true);
-      fetch("http://localhost:4000/api/syncallgroups")
+      fetch("syncallgroups")
         .then((response) => {
           if (!response.ok) throw new Error("API request failed");
           return response.json();
@@ -99,17 +107,11 @@ const App = () => {
     const payload = {
       district: selectedDistrict.toLowerCase(),
       block: selectedBlock.toLowerCase(),
-      udise_codes: udiseCodesList,
+      udisecodes: udiseCodesList,
     };
 
     setLoading(true);
-    fetch("http://localhost:4000/api/uploadexcel", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    })
+    find_group(payload)
       .then((res) => {
         if (!res.ok) throw new Error("Upload failed");
         return res.json();
@@ -133,6 +135,7 @@ const App = () => {
     );
     setAllBlocks(myBlocks);
   }, [selectedDistrict]);
+  console.log("REACT_APP_BASE_URL--------------->", REACT_APP_BASE_URL);
 
   return (
     <div style={styles.container}>
