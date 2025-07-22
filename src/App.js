@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import districtJson from "../src/DistrictData.json";
 
@@ -17,6 +17,7 @@ const App = () => {
   const [passwordError, setPasswordError] = useState("");
   const [loading, setLoading] = useState(false);
   const [excelFile, setExcelFile] = useState(null);
+  const [allBlocks, setAllBlocks] = useState([]);
 
   const handleSyncClick = () => {
     setShowSyncModal(true);
@@ -106,7 +107,20 @@ const App = () => {
 
     reader.readAsArrayBuffer(excelFile);
   };
-  console.log("districtJson========>", districtJson);
+
+  const districtsList = districtJson.map((item) => item.district);
+  const uniqueDistricts = [...new Set(districtsList)];
+
+  console.log("selectedDistrict---------->", selectedDistrict);
+
+  useEffect(() => {
+    const myBlocks = districtJson.filter(
+      (item) => item.district === selectedDistrict
+    );
+    setAllBlocks(myBlocks);
+  }, [selectedDistrict]);
+
+  console.log("allBlocks----------------->", allBlocks);
 
   return (
     <div style={styles.container}>
@@ -138,9 +152,9 @@ const App = () => {
               }}
             >
               <option value="">Select District</option>
-              {districtJson.map((district) => (
-                <option key={district} value={district.district}>
-                  {district.district}
+              {uniqueDistricts.map((district, id) => (
+                <option key={id} value={district}>
+                  {district}
                 </option>
               ))}
             </select>
@@ -155,8 +169,8 @@ const App = () => {
               disabled={!selectedDistrict}
             >
               <option value="">Select Block</option>
-              {districtJson.map((block) => (
-                <option key={block} value={block.block}>
+              {allBlocks.map((block, id) => (
+                <option key={id} value={block.block}>
                   {block.block}
                 </option>
               ))}
