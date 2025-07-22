@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import * as XLSX from "xlsx";
+import districtJson from "../src/DistrictData.json";
 
 const districtBlockData = {
   Khordha: ["Bhubaneswar", "Jatni", "Balianta"],
@@ -13,19 +15,13 @@ const App = () => {
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState("");
   const [loading, setLoading] = useState(false);
+  const [excelFile, setExcelFile] = useState(null);
 
   const handleSyncClick = () => {
     setShowSyncModal(true);
     setPasswordInput("");
     setPasswordError("");
-  };
-
-  const handleAddClick = () => {
-    setShowAddModal(true);
-    setPhoneNumber("");
   };
 
   const handlePasswordSubmit = () => {
@@ -51,46 +47,71 @@ const App = () => {
     }
   };
 
-  const handlePhoneNumberSubmit = () => {
-    if (phoneNumber.trim() === "") {
-      alert("Please enter a phone number.");
-      return;
-    }
+  const handleExcelSubmit = () => {
+    if (!excelFile) return alert("Please select an Excel file.");
+    if (!selectedDistrict || !selectedBlock)
+      return alert("Please select District and Block.");
 
-    if (!selectedDistrict || !selectedBlock) {
-      alert("Please select both District and Block.");
-      return;
-    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: "array" });
 
-    const fullNumber = "91" + phoneNumber;
-    const payload = {
-      number: parseInt(fullNumber),
-      district: selectedDistrict,
-      block: selectedBlock,
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+      const udiseCodes = jsonData
+        .map(
+          (row) =>
+            row.udice_code ||
+            row.UDICE_CODE ||
+            row["Udice Code"] ||
+            row["UDICE CODE"]
+        )
+        .filter(Boolean);
+
+      if (udiseCodes.length === 0) {
+        alert("No UDISE codes found in the Excel file.");
+        return;
+      }
+
+      const payload = {
+        district: selectedDistrict,
+        block: selectedBlock,
+        udice_codes: udiseCodes,
+      };
+
+      setLoading(true);
+      fetch("http://localhost:4000/api/uploadexcel", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("Upload failed");
+          return res.json();
+        })
+        .then(() => {
+          alert("UDISE codes submitted successfully.");
+          setExcelFile(null);
+        })
+        .catch((err) => {
+          alert("Error: " + err.message);
+        })
+        .finally(() => setLoading(false));
     };
 
-    fetch("http://localhost:4000/api/addnumbertogroups", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to add number");
-        return res.json();
-      })
-      .then(() => {
-        alert("Phone number submitted successfully.");
-        setShowAddModal(false);
-      })
-      .catch((err) => {
-        alert("Error: " + err.message);
-      });
+    reader.readAsArrayBuffer(excelFile);
   };
+  console.log("districtJson========>", districtJson);
 
   return (
     <div style={styles.container}>
       <div style={styles.headerContainer}>
-        <h1 style={styles.header}>Block-Wise Number Addition</h1>
+        <h1 style={styles.header}>Block-Wise Group Fetch</h1>
         <div style={styles.headerActions}>
           <button style={styles.primaryButton} onClick={handleSyncClick}>
             Sync Groups
@@ -117,9 +138,9 @@ const App = () => {
               }}
             >
               <option value="">Select District</option>
-              {Object.keys(districtBlockData).map((district) => (
-                <option key={district} value={district}>
-                  {district}
+              {districtJson.map((district) => (
+                <option key={district} value={district.district}>
+                  {district.district}
                 </option>
               ))}
             </select>
@@ -134,19 +155,30 @@ const App = () => {
               disabled={!selectedDistrict}
             >
               <option value="">Select Block</option>
-              {selectedDistrict &&
-                districtBlockData[selectedDistrict].map((block) => (
-                  <option key={block} value={block}>
-                    {block}
-                  </option>
-                ))}
+              {districtJson.map((block) => (
+                <option key={block} value={block.block}>
+                  {block.block}
+                </option>
+              ))}
             </select>
           </div>
         </div>
 
         <div style={styles.topButtons}>
-          <button style={styles.primaryButton} onClick={handleAddClick}>
-            Add Number
+          <input
+            type="file"
+            accept=".xls,.xlsx"
+            onChange={(e) => setExcelFile(e.target.files[0])}
+            style={{ fontSize: "14px" }}
+          />
+          <button
+            style={styles.primaryButton}
+            onClick={handleExcelSubmit}
+            disabled={
+              !excelFile || !selectedDistrict || !selectedBlock || loading
+            }
+          >
+            {loading ? "Uploading..." : "Submit Excel"}
           </button>
         </div>
       </div>
@@ -179,47 +211,6 @@ const App = () => {
                 style={{ ...styles.modalButton, ...styles.cancelButton }}
                 onClick={() => setShowSyncModal(false)}
                 disabled={loading}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Number Modal */}
-      {showAddModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <h3 style={styles.modalTitle}>Enter Recovery Phone Number</h3>
-            <div style={{ position: "relative" }}>
-              <div style={styles.phonePrefix}>+91</div>
-              <input
-                type="text"
-                style={{ ...styles.input, paddingLeft: "50px" }}
-                placeholder="XXXXXXXXXX"
-                value={phoneNumber}
-                onChange={(e) => {
-                  const input = e.target.value.replace(/\D/g, "");
-                  if (input.length <= 10) setPhoneNumber(input);
-                }}
-              />
-            </div>
-            <div style={styles.modalButtons}>
-              <button
-                style={styles.modalButton}
-                onClick={handlePhoneNumberSubmit}
-                disabled={
-                  phoneNumber.length !== 10 ||
-                  !selectedDistrict ||
-                  !selectedBlock
-                }
-              >
-                Submit
-              </button>
-              <button
-                style={{ ...styles.modalButton, ...styles.cancelButton }}
-                onClick={() => setShowAddModal(false)}
               >
                 Cancel
               </button>
@@ -280,6 +271,7 @@ const styles = {
     display: "flex",
     gap: "12px",
     marginTop: "20px",
+    alignItems: "center",
   },
   primaryButton: {
     padding: "10px 20px",
@@ -370,12 +362,5 @@ const styles = {
     marginTop: "-15px",
     marginBottom: "15px",
     fontSize: "14px",
-  },
-  phonePrefix: {
-    position: "absolute",
-    left: "12px",
-    top: "12px",
-    color: "#64748b",
-    fontWeight: "500",
   },
 };
