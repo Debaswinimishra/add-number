@@ -1,60 +1,21 @@
 import React, { useEffect, useState } from "react";
 
-const App = () => {
-  const [data, setData] = useState([]);
-  const [error, setError] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState("all");
+const districtBlockData = {
+  Khordha: ["Bhubaneswar", "Jatni", "Balianta"],
+  Cuttack: ["Cuttack Sadar", "Banki", "Nischintakoili"],
+  Ganjam: ["Chhatrapur", "Berhampur", "Digapahandi"],
+  Puri: ["Puri Sadar", "Brahmagiri", "Krushnaprasad"],
+};
 
+const App = () => {
+  const [selectedDistrict, setSelectedDistrict] = useState("");
+  const [selectedBlock, setSelectedBlock] = useState("");
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordError, setPasswordError] = useState("");
-
   const [showAddModal, setShowAddModal] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [loading, setLoading] = React.useState(false);
-  const [loadingData, setLoadingData] = useState(true);
-  const recordsPerPage = 10;
-
-  useEffect(() => {
-    setLoadingData(true);
-    fetch("http://localhost:4000/api/getnumberadditionstatus")
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error("Failed to fetch data");
-        }
-        return res.json();
-      })
-      .then((response) => {
-        if (response.status === "success") {
-          setData(response.data);
-        } else {
-          setError("API returned failure");
-        }
-      })
-      .catch((err) => {
-        setError(err.message);
-      })
-      .finally(() => {
-        setLoadingData(false);
-      });
-  }, []);
-
-  const filteredData =
-    statusFilter === "all"
-      ? data
-      : data.filter((item) =>
-          statusFilter === "added"
-            ? item.child_status === "added"
-            : item.child_status !== "added"
-        );
-
-  const totalPages = Math.ceil(filteredData.length / recordsPerPage);
-  const startIndex = (currentPage - 1) * recordsPerPage;
-  const currentData = filteredData.slice(
-    startIndex,
-    startIndex + recordsPerPage
-  );
+  const [loading, setLoading] = useState(false);
 
   const handleSyncClick = () => {
     setShowSyncModal(true);
@@ -72,15 +33,12 @@ const App = () => {
       setLoading(true);
       fetch("http://localhost:4000/api/syncallgroups")
         .then((response) => {
-          if (!response.ok) {
-            throw new Error("API request failed");
-          }
+          if (!response.ok) throw new Error("API request failed");
           return response.json();
         })
         .then((data) => {
           alert("Password correct! Sync started.\n" + JSON.stringify(data));
           setShowSyncModal(false);
-          setPasswordError("");
         })
         .catch((error) => {
           alert("Sync failed: " + error.message);
@@ -99,39 +57,42 @@ const App = () => {
       return;
     }
 
-    const fullNumber = "91" + phoneNumber;
-    console.log(
-      "JSON.stringify({ number: fullNumber })------------------>",
-      JSON.stringify({ number: fullNumber })
-    );
-    // fetch("http://localhost:4000/api/addnumbertogroups", {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //   },
-    //   body: JSON.stringify({ number: fullNumber }),
-    // })
-    //   .then((res) => {
-    //     if (!res.ok) throw new Error("Failed to add number");
-    //     return res.json();
-    //   })
-    //   .then((data) => {
-    //     alert("Phone number submitted successfully.");
-    //     setShowAddModal(false);
-    //   })
-    //   .catch((err) => {
-    //     alert("Error: " + err.message);
-    //   });
-  };
+    if (!selectedDistrict || !selectedBlock) {
+      alert("Please select both District and Block.");
+      return;
+    }
 
-  const filteredValues = currentData?.filter((item, id) => {
-    return item.child_status === statusFilter;
-  });
+    const fullNumber = "91" + phoneNumber;
+    const payload = {
+      number: parseInt(fullNumber),
+      district: selectedDistrict,
+      block: selectedBlock,
+    };
+
+    console.log("Submitting:", payload);
+
+    fetch("http://localhost:4000/api/addnumbertogroups", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to add number");
+        return res.json();
+      })
+      .then(() => {
+        alert("Phone number submitted successfully.");
+        setShowAddModal(false);
+      })
+      .catch((err) => {
+        alert("Error: " + err.message);
+      });
+  };
 
   return (
     <div style={styles.container}>
       <div style={styles.headerContainer}>
-        <h1 style={styles.header}>Number Addition Status</h1>
+        <h1 style={styles.header}>Block-Wise Number Addition</h1>
         <div style={styles.headerActions}>
           <button
             style={styles.refreshButton}
@@ -145,33 +106,43 @@ const App = () => {
       <div style={styles.controlsContainer}>
         <div style={styles.filtersContainer}>
           <div style={styles.filterItem}>
-            <label style={styles.filterLabel}>Select VM:</label>
-            <select style={styles.filterSelect}>
-              {vmOptions.map((vm, index) => (
-                <option key={index} value={vm.value}>
-                  {vm.text}
+            <label style={styles.filterLabel}>District:</label>
+            <select
+              style={styles.filterSelect}
+              value={selectedDistrict}
+              onChange={(e) => {
+                setSelectedDistrict(e.target.value);
+                setSelectedBlock("");
+              }}
+            >
+              <option value="">Select District</option>
+              {Object.keys(districtBlockData).map((district) => (
+                <option key={district} value={district}>
+                  {district}
                 </option>
               ))}
             </select>
           </div>
 
           <div style={styles.filterItem}>
-            <label style={styles.filterLabel}>Status:</label>
+            <label style={styles.filterLabel}>Block:</label>
             <select
               style={styles.filterSelect}
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setCurrentPage(1);
-              }}
+              value={selectedBlock}
+              onChange={(e) => setSelectedBlock(e.target.value)}
+              disabled={!selectedDistrict}
             >
-              <option value="all">All</option>
-              <option value="added">Added</option>
-              <option value="pending">Pending</option>
-              <option value="not added">Not Added</option>
+              <option value="">Select Block</option>
+              {selectedDistrict &&
+                districtBlockData[selectedDistrict].map((block) => (
+                  <option key={block} value={block}>
+                    {block}
+                  </option>
+                ))}
             </select>
           </div>
         </div>
+
         <div style={styles.topButtons}>
           <button style={styles.primaryButton} onClick={handleSyncClick}>
             Sync Groups
@@ -181,122 +152,6 @@ const App = () => {
           </button>
         </div>
       </div>
-
-      {loadingData ? (
-        <div style={styles.loadingContainer}>
-          <p style={styles.loadingText}>Loading data...</p>
-        </div>
-      ) : error ? (
-        <div style={styles.errorContainer}>
-          <p style={styles.errorText}>{error}</p>
-        </div>
-      ) : (
-        <div style={styles.tableContainer}>
-          <div style={styles.tableHeader}>
-            <p style={styles.infoText}>Total Records: {filteredData.length}</p>
-          </div>
-
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Group Name</th>
-                <th style={styles.th}>Participant Number</th>
-                <th style={styles.th}>Status</th>
-                <th style={styles.th}>Remark</th>
-                <th style={styles.th}>Group Admin</th>
-                <th style={styles.th}>Added On</th>
-              </tr>
-            </thead>
-            <tbody>
-              {statusFilter !== "all"
-                ? filteredValues.map((item, index) => (
-                    <tr
-                      key={item._id}
-                      style={index % 2 === 0 ? styles.stripedRow : {}}
-                    >
-                      <td style={styles.td}>{item.groupname}</td>
-                      <td style={styles.td}>{item.child_number}</td>
-                      <td
-                        style={{
-                          ...styles.td,
-                          ...(item.child_status === "added"
-                            ? styles.statusAdded
-                            : item.child_status == "pending"
-                            ? styles.statusPending
-                            : styles.statusNotAdded),
-                        }}
-                      >
-                        {item.child_status}
-                      </td>
-                      <td style={styles.td}>{item.child_remark}</td>
-                      <td style={styles.td}>
-                        {item.parent_isadmin ? "✅" : "❌"}
-                      </td>
-                      <td style={styles.td}>
-                        {new Date(item.child_addedon).toLocaleString()}
-                      </td>
-                    </tr>
-                  ))
-                : currentData.map((item, index) => (
-                    <tr
-                      key={item._id}
-                      style={index % 2 === 0 ? styles.stripedRow : {}}
-                    >
-                      <td style={styles.td}>{item.groupname}</td>
-                      <td style={styles.td}>{item.child_number}</td>
-                      <td
-                        style={{
-                          ...styles.td,
-                          ...(item.child_status === "added"
-                            ? styles.statusAdded
-                            : item.child_status == "pending"
-                            ? styles.statusPending
-                            : styles.statusNotAdded),
-                        }}
-                      >
-                        {item.child_status}
-                      </td>
-                      <td style={styles.td}>{item.child_remark}</td>
-                      <td style={styles.td}>
-                        {item.parent_isadmin ? "✅" : "❌"}
-                      </td>
-                      <td style={styles.td}>
-                        {new Date(item.child_addedon).toLocaleString()}
-                      </td>
-                    </tr>
-                  ))}
-            </tbody>
-          </table>
-
-          <div style={styles.pagination}>
-            <button
-              style={{
-                ...styles.button,
-                ...(currentPage === 1 ? styles.disabledButton : {}),
-              }}
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </button>
-            <span style={styles.pageInfo}>
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              style={{
-                ...styles.button,
-                ...(currentPage === totalPages ? styles.disabledButton : {}),
-              }}
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Sync Modal */}
       {showSyncModal && (
@@ -356,7 +211,11 @@ const App = () => {
               <button
                 style={styles.modalButton}
                 onClick={handlePhoneNumberSubmit}
-                disabled={phoneNumber.length !== 10}
+                disabled={
+                  phoneNumber.length !== 10 ||
+                  !selectedDistrict ||
+                  !selectedBlock
+                }
               >
                 Submit
               </button>
@@ -376,46 +235,13 @@ const App = () => {
 
 export default App;
 
-const vmOptions = [
-  { value: "vm1", text: "vm1" },
-  { value: "vm2", text: "vm2" },
-  { value: "vm3", text: "vm3" },
-  { value: "vm4", text: "vm4" },
-  { value: "vm5", text: "vm5" },
-  { value: "vm6", text: "vm6" },
-  { value: "vm7", text: "vm7" },
-  { value: "vm8", text: "vm8" },
-  { value: "vm9", text: "vm9" },
-  { value: "vm10", text: "vm10" },
-  { value: "vm11", text: "vm11" },
-  { value: "vm12", text: "vm12" },
-  { value: "vm13", text: "vm13" },
-  { value: "vm14", text: "vm14" },
-  { value: "vm15", text: "vm15" },
-  { value: "vm16", text: "vm16" },
-  { value: "vm17", text: "vm17" },
-  { value: "vm18", text: "vm18" },
-  { value: "vm19", text: "vm19" },
-  { value: "vm20", text: "vm20" },
-  { value: "vm21", text: "vm21" },
-  { value: "vm22", text: "vm22" },
-  { value: "vm23", text: "vm23" },
-  { value: "vm24", text: "vm24" },
-  { value: "vm25", text: "vm25" },
-  { value: "vm26", text: "vm26" },
-  { value: "vm27", text: "vm27" },
-  { value: "vm28", text: "vm28" },
-  { value: "vm29", text: "vm29" },
-  { value: "vm30", text: "vm30" },
-];
-
 const styles = {
   container: {
     fontFamily: "'Segoe UI', 'Roboto', sans-serif",
     padding: "20px",
     backgroundColor: "#f5f7fa",
     minHeight: "100vh",
-    maxWidth: "1400px",
+    maxWidth: "1000px",
     margin: "0 auto",
   },
   headerContainer: {
@@ -444,11 +270,6 @@ const styles = {
     borderRadius: "6px",
     cursor: "pointer",
     fontWeight: "500",
-    transition: "all 0.2s ease",
-    boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
-    ":hover": {
-      backgroundColor: "#edf2f7",
-    },
   },
   controlsContainer: {
     backgroundColor: "#ffffff",
@@ -460,7 +281,7 @@ const styles = {
   topButtons: {
     display: "flex",
     gap: "12px",
-    marginBottom: "20px",
+    marginTop: "20px",
   },
   primaryButton: {
     padding: "10px 20px",
@@ -471,18 +292,11 @@ const styles = {
     cursor: "pointer",
     fontWeight: "500",
     fontSize: "15px",
-    transition: "all 0.2s ease",
-    boxShadow: "0 2px 4px rgba(76, 110, 245, 0.3)",
-    ":hover": {
-      backgroundColor: "#3b5bdb",
-      transform: "translateY(-1px)",
-    },
   },
   filtersContainer: {
     display: "flex",
     gap: "20px",
     flexWrap: "wrap",
-    marginBottom: "20px",
   },
   filterItem: {
     display: "flex",
@@ -501,112 +315,6 @@ const styles = {
     backgroundColor: "#fff",
     fontSize: "14px",
     minWidth: "150px",
-    ":focus": {
-      outline: "none",
-      borderColor: "#4c6ef5",
-      boxShadow: "0 0 0 3px rgba(76, 110, 245, 0.1)",
-    },
-  },
-  tableContainer: {
-    backgroundColor: "#ffffff",
-    borderRadius: "12px",
-    overflow: "hidden",
-    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
-  },
-  tableHeader: {
-    padding: "16px 20px",
-    backgroundColor: "#f8fafc",
-    borderBottom: "1px solid #e2e8f0",
-  },
-  infoText: {
-    fontWeight: "500",
-    color: "#4a5568",
-    margin: "0",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-    fontSize: "14px",
-  },
-  th: {
-    padding: "14px 16px",
-    backgroundColor: "#f1f5f9",
-    color: "#334155",
-    fontWeight: "600",
-    textAlign: "left",
-    borderBottom: "1px solid #e2e8f0",
-  },
-  td: {
-    padding: "12px 16px",
-    color: "#475569",
-    borderBottom: "1px solid #e2e8f0",
-  },
-  stripedRow: {
-    backgroundColor: "#f8fafc",
-  },
-  statusAdded: {
-    color: "#16a34a",
-    fontWeight: "600",
-  },
-  statusPending: {
-    color: "#2563eb",
-    fontWeight: "600",
-  },
-  statusNotAdded: {
-    color: "#dc2626",
-    fontWeight: "600",
-  },
-  pagination: {
-    padding: "16px 20px",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: "16px",
-    backgroundColor: "#f8fafc",
-    borderTop: "1px solid #e2e8f0",
-  },
-  button: {
-    padding: "8px 16px",
-    border: "none",
-    backgroundColor: "#4c6ef5",
-    color: "white",
-    borderRadius: "6px",
-    cursor: "pointer",
-    fontWeight: "500",
-    minWidth: "90px",
-  },
-  disabledButton: {
-    backgroundColor: "#cbd5e1",
-    cursor: "not-allowed",
-  },
-  pageInfo: {
-    color: "#475569",
-    fontWeight: "500",
-  },
-  loadingContainer: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    height: "200px",
-    backgroundColor: "#ffffff",
-    borderRadius: "12px",
-    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
-  },
-  loadingText: {
-    color: "#64748b",
-    fontSize: "16px",
-  },
-  errorContainer: {
-    padding: "24px",
-    backgroundColor: "#ffffff",
-    borderRadius: "12px",
-    textAlign: "center",
-    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
-  },
-  errorText: {
-    color: "#dc2626",
-    fontSize: "16px",
-    fontWeight: "500",
   },
   modalOverlay: {
     position: "fixed",
@@ -641,11 +349,6 @@ const styles = {
     borderRadius: "8px",
     border: "1px solid #cbd5e1",
     boxSizing: "border-box",
-    ":focus": {
-      outline: "none",
-      borderColor: "#4c6ef5",
-      boxShadow: "0 0 0 3px rgba(76, 110, 245, 0.1)",
-    },
   },
   modalButtons: {
     display: "flex",
@@ -660,16 +363,9 @@ const styles = {
     backgroundColor: "#4c6ef5",
     color: "white",
     fontWeight: "500",
-    transition: "background-color 0.2s ease",
-    ":hover": {
-      backgroundColor: "#3b5bdb",
-    },
   },
   cancelButton: {
     backgroundColor: "#94a3b8",
-    ":hover": {
-      backgroundColor: "#64748b",
-    },
   },
   passwordError: {
     color: "#dc2626",
