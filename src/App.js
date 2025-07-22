@@ -2,13 +2,6 @@ import React, { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import districtJson from "../src/DistrictData.json";
 
-const districtBlockData = {
-  Khordha: ["Bhubaneswar", "Jatni", "Balianta"],
-  Cuttack: ["Cuttack Sadar", "Banki", "Nischintakoili"],
-  Ganjam: ["Chhatrapur", "Berhampur", "Digapahandi"],
-  Puri: ["Puri Sadar", "Brahmagiri", "Krushnaprasad"],
-};
-
 const App = () => {
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedBlock, setSelectedBlock] = useState("");
@@ -18,6 +11,8 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [excelFile, setExcelFile] = useState(null);
   const [allBlocks, setAllBlocks] = useState([]);
+  const [udiseCodesList, setUdiseCodesList] = useState([]);
+  const [previewData, setPreviewData] = useState([]);
 
   const handleSyncClick = () => {
     setShowSyncModal(true);
@@ -48,10 +43,8 @@ const App = () => {
     }
   };
 
-  const handleExcelSubmit = () => {
-    if (!excelFile) return alert("Please select an Excel file.");
-    if (!selectedDistrict || !selectedBlock)
-      return alert("Please select District and Block.");
+  const handleExcelUpload = (file) => {
+    if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -62,56 +55,77 @@ const App = () => {
       const sheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(sheet);
 
-      const udiseCodes = jsonData
-        .map(
-          (row) =>
-            row.udice_code ||
-            row.UDICE_CODE ||
-            row["Udice Code"] ||
-            row["UDICE CODE"]
-        )
+      // Standardize UDISE code field name
+      const standardizedData = jsonData.map((row) => {
+        // Check for various possible UDISE code field names
+        const udiseCode =
+          row.udise_code ||
+          row.udice_code ||
+          row.UDISE_CODE ||
+          row.UDICE_CODE ||
+          row["Udise Code"] ||
+          row["Udice Code"] ||
+          row["UDISE CODE"] ||
+          row["UDICE CODE"];
+
+        return {
+          ...row,
+          udise_code: udiseCode, // Standardize to udise_code
+        };
+      });
+
+      setPreviewData(standardizedData);
+
+      const udiseCodes = standardizedData
+        .map((row) => row.udise_code)
         .filter(Boolean);
 
-      if (udiseCodes.length === 0) {
-        alert("No UDISE codes found in the Excel file.");
-        return;
-      }
-
-      const payload = {
-        district: selectedDistrict,
-        block: selectedBlock,
-        udice_codes: udiseCodes,
-      };
-
-      setLoading(true);
-      fetch("http://localhost:4000/api/uploadexcel", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      })
-        .then((res) => {
-          if (!res.ok) throw new Error("Upload failed");
-          return res.json();
-        })
-        .then(() => {
-          alert("UDISE codes submitted successfully.");
-          setExcelFile(null);
-        })
-        .catch((err) => {
-          alert("Error: " + err.message);
-        })
-        .finally(() => setLoading(false));
+      setUdiseCodesList(udiseCodes);
     };
 
-    reader.readAsArrayBuffer(excelFile);
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleExcelSubmit = () => {
+    if (!excelFile) return alert("Please select an Excel file.");
+    if (!selectedDistrict || !selectedBlock)
+      return alert("Please select District and Block.");
+
+    if (udiseCodesList.length === 0) {
+      alert("No UDISE codes found in the Excel file.");
+      return;
+    }
+
+    const payload = {
+      district: selectedDistrict.toLowerCase(),
+      block: selectedBlock.toLowerCase(),
+      udise_codes: udiseCodesList,
+    };
+
+    setLoading(true);
+    fetch("http://localhost:4000/api/uploadexcel", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Upload failed");
+        return res.json();
+      })
+      .then(() => {
+        alert("UDISE codes submitted successfully.");
+        setExcelFile(null);
+      })
+      .catch((err) => {
+        alert("Error: " + err.message);
+      })
+      .finally(() => setLoading(false));
   };
 
   const districtsList = districtJson.map((item) => item.district);
   const uniqueDistricts = [...new Set(districtsList)];
-
-  console.log("selectedDistrict---------->", selectedDistrict);
 
   useEffect(() => {
     const myBlocks = districtJson.filter(
@@ -119,8 +133,6 @@ const App = () => {
     );
     setAllBlocks(myBlocks);
   }, [selectedDistrict]);
-
-  console.log("allBlocks----------------->", allBlocks);
 
   return (
     <div style={styles.container}>
@@ -149,6 +161,7 @@ const App = () => {
               onChange={(e) => {
                 setSelectedDistrict(e.target.value);
                 setSelectedBlock("");
+                setUdiseCodesList([]);
               }}
             >
               <option value="">Select District</option>
@@ -182,7 +195,10 @@ const App = () => {
           <input
             type="file"
             accept=".xls,.xlsx"
-            onChange={(e) => setExcelFile(e.target.files[0])}
+            onChange={(e) => {
+              setExcelFile(e.target.files[0]);
+              handleExcelUpload(e.target.files[0]);
+            }}
             style={{ fontSize: "14px" }}
           />
           <button
@@ -195,9 +211,44 @@ const App = () => {
             {loading ? "Uploading..." : "Submit Excel"}
           </button>
         </div>
+
+        {previewData.length > 0 && (
+          <div style={{ marginTop: "20px" }}>
+            <h3
+              style={{ fontSize: "16px", fontWeight: "500", color: "#2d3748" }}
+            >
+              Excel Preview ({previewData.length} rows):
+            </h3>
+            <div style={styles.previewContainer}>
+              <div style={styles.previewScrollContainer}>
+                <table style={styles.previewTable}>
+                  <thead>
+                    <tr>
+                      {Object.keys(previewData[0]).map((key) => (
+                        <th key={key} style={styles.previewTableHeader}>
+                          {key}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {previewData.map((row, idx) => (
+                      <tr key={idx}>
+                        {Object.values(row).map((value, i) => (
+                          <td key={i} style={styles.previewTableCell}>
+                            {String(value)}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Sync Modal */}
       {showSyncModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
@@ -376,5 +427,68 @@ const styles = {
     marginTop: "-15px",
     marginBottom: "15px",
     fontSize: "14px",
+  },
+  // New improved preview styles
+  previewContainer: {
+    border: "1px solid #e2e8f0",
+    borderRadius: "8px",
+    overflow: "hidden",
+    marginTop: "10px",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+  },
+  previewScrollContainer: {
+    maxHeight: "400px",
+    overflow: "auto",
+    position: "relative",
+  },
+  previewTable: {
+    width: "100%",
+    borderCollapse: "collapse",
+    fontSize: "14px",
+  },
+  previewTableHeader: {
+    padding: "10px",
+    textAlign: "left",
+    backgroundColor: "#f1f5f9",
+    position: "sticky",
+    top: 0,
+    borderBottom: "1px solid #e2e8f0",
+    fontWeight: "500",
+    color: "#334155",
+  },
+  previewTableCell: {
+    padding: "8px 10px",
+    borderBottom: "1px solid #e2e8f0",
+    whiteSpace: "nowrap",
+    color: "#475569",
+  },
+  previewTableRow: {
+    "&:hover": {
+      backgroundColor: "#f8fafc",
+    },
+  },
+  udiseListContainer: {
+    maxHeight: "200px",
+    overflowY: "auto",
+    marginTop: "10px",
+    padding: "10px",
+    background: "#fff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "8px",
+    boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+  },
+  udiseListItem: {
+    fontSize: "14px",
+    color: "#475569",
+    padding: "4px 0",
+    "&:hover": {
+      color: "#1e40af",
+    },
+  },
+  previewTitle: {
+    fontSize: "16px",
+    fontWeight: "500",
+    color: "#2d3748",
+    marginBottom: "8px",
   },
 };
