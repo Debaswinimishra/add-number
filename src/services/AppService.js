@@ -9,3 +9,5 @@ export const sync_group = async () => await Api.get(`syncallgroups`);
 export const add_number_to_group = async (body) => {
   return await Api.post("addnumbertogroups", body);
 };
+
+export const get_status = async () => await Api.get(`getnumberadditionstatus`);

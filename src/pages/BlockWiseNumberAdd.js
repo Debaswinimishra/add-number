@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import districtJson from "../components/DistrictData.json";
 import { useNavigate } from "react-router-dom";
-import { add_number_to_group } from "../services/AppService";
+import { add_number_to_group, get_status } from "../services/AppService";
 
 const BlockWiseGroupFetch = () => {
   const navigate = useNavigate();
@@ -11,6 +11,34 @@ const BlockWiseGroupFetch = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [numberInput, setNumberInput] = useState("");
   const [validationError, setValidationError] = useState("");
+  const [tableData, setTableData] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const fetchAllData = () => {
+    setIsLoading(true);
+    get_status()
+      .then((res) => {
+        console.log("response----------->", res);
+        if (res?.data) {
+          setTableData(res.data);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchAllData();
+    const intervalId = setInterval(fetchAllData, 10000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
 
   useEffect(() => {
     const blocks = districtJson.filter(
@@ -98,67 +126,97 @@ const BlockWiseGroupFetch = () => {
         </button>
         <div>
           <h1 style={styles.header}>Block-wise Mobile Number Add</h1>
-          <p style={styles.subHeader}>
-            Select district and block to add a number
-          </p>
+          <p style={styles.subHeader}>Add mobile numbers to specific blocks</p>
         </div>
       </div>
 
-      <div style={styles.filtersContainer}>
-        <div style={styles.filterItem}>
-          <select
-            value={selectedDistrict}
-            onChange={(e) => setSelectedDistrict(e.target.value)}
-            style={styles.select}
-            aria-label="Select district"
-          >
-            <option value="">Select District</option>
-            {[...new Set(districtJson.map((item) => item.district))].map(
-              (d, i) => (
-                <option key={i} value={d}>
-                  {d}
-                </option>
-              )
-            )}
-          </select>
-        </div>
+      <div style={styles.controlsContainer}>
+        <button
+          style={{
+            ...styles.button,
+            ...styles.primaryButton,
+          }}
+          onClick={() => setShowAddModal(true)}
+          aria-label="Add mobile number"
+        >
+          Add Number
+        </button>
+        <button
+          style={{
+            ...styles.button,
+            ...styles.primaryButton,
+          }}
+          onClick={() => window.location.reload()}
+        >
+          Refresh
+        </button>
 
-        <div style={styles.filterItem}>
-          <select
-            value={selectedBlock}
-            onChange={(e) => setSelectedBlock(e.target.value)}
-            style={styles.select}
-            disabled={!selectedDistrict}
-            aria-label="Select block"
+        <div style={styles.refreshInfo}>
+          <svg
+            style={styles.refreshIcon}
+            viewBox="0 0 20 20"
+            fill="currentColor"
           >
-            <option value="">Select Block</option>
-            {allBlocks.map((b, i) => (
-              <option key={i} value={b.block}>
-                {b.block}
-              </option>
-            ))}
-          </select>
+            <path
+              fillRule="evenodd"
+              d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <span>Data refreshes every 10 seconds</span>
         </div>
       </div>
 
-      <button
-        style={{
-          ...styles.button,
-          ...styles.primaryButton,
-          opacity: selectedDistrict && selectedBlock ? 1 : 0.7,
-          cursor: selectedDistrict && selectedBlock ? "pointer" : "not-allowed",
-        }}
-        onClick={() => {
-          if (selectedDistrict && selectedBlock) {
-            setShowAddModal(true);
-          } else {
-            alert("Please select both District and Block first");
-          }
-        }}
-        aria-label="Add mobile number"
-      >
-        Add Number
-      </button>
+      {/* Data Table */}
+      <div style={styles.tableContainer}>
+        {isLoading ? (
+          <div style={styles.loadingContainer}>
+            <div style={styles.spinner}></div>
+            <p>Loading data...</p>
+          </div>
+        ) : tableData.length > 0 ? (
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Mobile</th>
+                <th style={styles.th}>District</th>
+                <th style={styles.th}>Block</th>
+                <th style={styles.th}>Status</th>
+                <th style={styles.th}>Group</th>
+                <th style={styles.th}>Added On</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tableData.map((item, index) => (
+                <tr key={index} style={styles.tr}>
+                  <td style={styles.td}>{item.child_number}</td>
+                  <td style={styles.td}>{item.district}</td>
+                  <td style={styles.td}>{item.block}</td>
+                  <td style={styles.td}>
+                    <span
+                      style={{
+                        ...styles.statusBadge,
+                        backgroundColor:
+                          item.child_status === "added" ? "#d1fae5" : "#fee2e2",
+                        color:
+                          item.child_status === "added" ? "#065f46" : "#b91c1c",
+                      }}
+                    >
+                      {item.child_status}
+                    </span>
+                  </td>
+                  <td style={styles.td}>{item.child_remark}</td>
+                  <td style={styles.td}>{item.groupname}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div style={styles.noDataContainer}>
+            <p>No data available</p>
+          </div>
+        )}
+      </div>
 
       {/* Modal */}
       {showAddModal && (
@@ -166,8 +224,47 @@ const BlockWiseGroupFetch = () => {
           <div style={styles.modal}>
             <h3 style={styles.modalHeader}>Add Mobile Number</h3>
             <p style={styles.modalSubHeader}>
-              For {selectedDistrict} / {selectedBlock}
+              Select district and block to add a number
             </p>
+
+            <div style={styles.filtersContainer}>
+              <div style={styles.filterItem}>
+                <label style={styles.inputLabel}>District</label>
+                <select
+                  value={selectedDistrict}
+                  onChange={(e) => setSelectedDistrict(e.target.value)}
+                  style={styles.select}
+                  aria-label="Select district"
+                >
+                  <option value="">Select District</option>
+                  {[...new Set(districtJson.map((item) => item.district))].map(
+                    (d, i) => (
+                      <option key={i} value={d}>
+                        {d}
+                      </option>
+                    )
+                  )}
+                </select>
+              </div>
+
+              <div style={styles.filterItem}>
+                <label style={styles.inputLabel}>Block</label>
+                <select
+                  value={selectedBlock}
+                  onChange={(e) => setSelectedBlock(e.target.value)}
+                  style={styles.select}
+                  disabled={!selectedDistrict}
+                  aria-label="Select block"
+                >
+                  <option value="">Select Block</option>
+                  {allBlocks.map((b, i) => (
+                    <option key={i} value={b.block}>
+                      {b.block}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
             <div style={styles.inputContainer}>
               <label style={styles.inputLabel}>Mobile Number</label>
@@ -185,6 +282,7 @@ const BlockWiseGroupFetch = () => {
                   maxLength={10}
                   autoFocus
                   aria-label="10-digit mobile number"
+                  disabled={!selectedDistrict || !selectedBlock}
                 />
               </div>
               {validationError && (
@@ -214,6 +312,9 @@ const BlockWiseGroupFetch = () => {
                 onClick={() => {
                   setShowAddModal(false);
                   setValidationError("");
+                  setSelectedDistrict("");
+                  setSelectedBlock("");
+                  setNumberInput("");
                 }}
               >
                 Cancel
@@ -222,12 +323,28 @@ const BlockWiseGroupFetch = () => {
                 style={{
                   ...styles.button,
                   ...styles.primaryButton,
-                  opacity: !validationError && numberInput ? 1 : 0.7,
+                  opacity:
+                    !validationError &&
+                    numberInput &&
+                    selectedDistrict &&
+                    selectedBlock
+                      ? 1
+                      : 0.7,
                   cursor:
-                    !validationError && numberInput ? "pointer" : "not-allowed",
+                    !validationError &&
+                    numberInput &&
+                    selectedDistrict &&
+                    selectedBlock
+                      ? "pointer"
+                      : "not-allowed",
                 }}
                 onClick={handleAddNumber}
-                disabled={!!validationError || !numberInput}
+                disabled={
+                  !!validationError ||
+                  !numberInput ||
+                  !selectedDistrict ||
+                  !selectedBlock
+                }
               >
                 Save Number
               </button>
@@ -245,7 +362,7 @@ const styles = {
   container: {
     padding: "24px",
     fontFamily: "'Inter', sans-serif",
-    maxWidth: "600px",
+    maxWidth: "1200px",
     margin: "0 auto",
     backgroundColor: "#f9fafb",
     borderRadius: "12px",
@@ -280,10 +397,89 @@ const styles = {
     fontSize: "14px",
     color: "#6b7280",
   },
+  controlsContainer: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "24px",
+    flexWrap: "wrap",
+    gap: "16px",
+  },
+  refreshInfo: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    fontSize: "14px",
+    color: "#6b7280",
+  },
+  refreshIcon: {
+    width: "16px",
+    height: "16px",
+    color: "#6b7280",
+  },
+  tableContainer: {
+    backgroundColor: "#fff",
+    borderRadius: "8px",
+    overflow: "hidden",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+    overflowX: "auto",
+  },
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+    fontSize: "14px",
+  },
+  th: {
+    padding: "12px 16px",
+    textAlign: "left",
+    backgroundColor: "#f3f4f6",
+    color: "#374151",
+    fontWeight: "600",
+    borderBottom: "1px solid #e5e7eb",
+  },
+  tr: {
+    borderBottom: "1px solid #e5e7eb",
+    "&:hover": {
+      backgroundColor: "#f9fafb",
+    },
+  },
+  td: {
+    padding: "12px 16px",
+    color: "#374151",
+    verticalAlign: "middle",
+  },
+  statusBadge: {
+    padding: "4px 8px",
+    borderRadius: "12px",
+    fontSize: "12px",
+    fontWeight: "500",
+    display: "inline-block",
+  },
+  loadingContainer: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "40px",
+    gap: "16px",
+  },
+  spinner: {
+    width: "40px",
+    height: "40px",
+    border: "4px solid #f3f4f6",
+    borderTop: "4px solid #4f46e5",
+    borderRadius: "50%",
+    animation: "spin 1s linear infinite",
+  },
+  noDataContainer: {
+    padding: "40px",
+    textAlign: "center",
+    color: "#6b7280",
+  },
   filtersContainer: {
     display: "flex",
     gap: "20px",
-    marginBottom: "32px",
+    marginBottom: "24px",
     flexWrap: "wrap",
   },
   filterItem: {
@@ -291,7 +487,8 @@ const styles = {
     flexDirection: "column",
     flex: "1 1 200px",
   },
-  label: {
+  inputLabel: {
+    display: "block",
     fontSize: "14px",
     fontWeight: "500",
     color: "#374151",
@@ -369,13 +566,6 @@ const styles = {
   },
   inputContainer: {
     marginBottom: "24px",
-  },
-  inputLabel: {
-    display: "block",
-    fontSize: "14px",
-    fontWeight: "500",
-    color: "#374151",
-    marginBottom: "8px",
   },
   inputGroup: {
     display: "flex",
