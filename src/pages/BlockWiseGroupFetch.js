@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import districtJson from "../components/DistrictData.json";
-import { find_group } from "../services/AppService";
+import { find_group, sync_group } from "../services/AppService";
 
 const BlockWiseGroupFetch = () => {
   const REACT_APP_BASE_URL = process.env.REACT_APP_BASE_URL;
@@ -25,7 +25,7 @@ const BlockWiseGroupFetch = () => {
   const handlePasswordSubmit = () => {
     if (passwordInput === "ThinkZone@2025") {
       setLoading(true);
-      fetch("syncallgroups")
+      sync_group
         .then((response) => {
           if (!response.ok) throw new Error("API request failed");
           return response.json();
