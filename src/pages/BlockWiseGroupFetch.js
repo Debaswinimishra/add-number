@@ -2,8 +2,10 @@ import React, { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import districtJson from "../components/DistrictData.json";
 import { find_group, sync_group } from "../services/AppService";
+import { useNavigate } from "react-router-dom";
 
 const BlockWiseGroupFetch = () => {
+  const navigate = useNavigate();
   const REACT_APP_BASE_URL = process.env.REACT_APP_BASE_URL;
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedBlock, setSelectedBlock] = useState("");
@@ -57,32 +59,22 @@ const BlockWiseGroupFetch = () => {
       const sheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(sheet);
 
-      // Standardize UDISE code field name
-      const standardizedData = jsonData.map((row) => {
-        // Check for various possible UDISE code field names
-        const udiseCode =
-          row.udise_code ||
-          row.udice_code ||
-          row.Udise_Code ||
-          row.UDISE_CODE ||
-          row.UDICE_CODE ||
-          row["Udise Code"] ||
-          row["Udice Code"] ||
-          row["UDISE CODE"] ||
-          row["UDICE CODE"];
+      // Extract UDISE codes regardless of column name
+      const standardizedData = jsonData
+        .map((row) => {
+          // Find the UDISE code by checking common column names
+          const udiseCode = Object.entries(row).find(
+            ([key]) =>
+              key.toLowerCase().includes("udise") ||
+              key.toLowerCase().includes("udice")
+          )?.[1];
 
-        return {
-          ...row,
-          udise_code: udiseCode, // Standardize to udise_code
-        };
-      });
+          return { udise_code: udiseCode };
+        })
+        .filter((item) => item.udise_code); // Filter out empty values
 
       setPreviewData(standardizedData);
-
-      const udiseCodes = standardizedData
-        .map((row) => row.udise_code)
-        .filter(Boolean);
-
+      const udiseCodes = standardizedData.map((row) => row.udise_code);
       setUdiseCodesList(udiseCodes);
     };
 
@@ -130,31 +122,59 @@ const BlockWiseGroupFetch = () => {
     );
     setAllBlocks(myBlocks);
   }, [selectedDistrict]);
-  console.log("REACT_APP_BASE_URL--------------->", REACT_APP_BASE_URL);
+
+  const handleGoBack = () => {
+    navigate(-1); // Go back to previous page
+  };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.headerContainer}>
-        <h1 style={styles.header}>Block-Wise Group Fetch</h1>
-        <div style={styles.headerActions}>
-          <button style={styles.primaryButton} onClick={handleSyncClick}>
+    <div className="block-wise-container">
+      <div className="header-container">
+        <button
+          onClick={handleGoBack}
+          // style={styles.backButton}
+          aria-label="Go back"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+        </button>
+        <div className="title-wrapper">
+          <h1 className="main-title">Block-Wise Group Fetch</h1>
+          <p className="subtitle">
+            Manage and synchronize school groups by block
+          </p>
+        </div>
+        <div className="header-actions">
+          <button className="sync-button" onClick={handleSyncClick}>
             Sync Groups
           </button>
           <button
-            style={styles.refreshButton}
+            className="refresh-button"
             onClick={() => window.location.reload()}
           >
-            Refresh 🔄
+            Refresh
           </button>
         </div>
       </div>
 
-      <div style={styles.controlsContainer}>
-        <div style={styles.filtersContainer}>
-          <div style={styles.filterItem}>
-            <label style={styles.filterLabel}>District:</label>
+      <div className="content-card">
+        <div className="filters-container">
+          <div className="filter-group">
+            <label className="filter-label">District</label>
             <select
-              style={styles.filterSelect}
+              className="filter-select"
               value={selectedDistrict}
               onChange={(e) => {
                 setSelectedDistrict(e.target.value);
@@ -171,10 +191,10 @@ const BlockWiseGroupFetch = () => {
             </select>
           </div>
 
-          <div style={styles.filterItem}>
-            <label style={styles.filterLabel}>Block:</label>
+          <div className="filter-group">
+            <label className="filter-label">Block</label>
             <select
-              style={styles.filterSelect}
+              className="filter-select"
               value={selectedBlock}
               onChange={(e) => setSelectedBlock(e.target.value)}
               disabled={!selectedDistrict}
@@ -189,18 +209,27 @@ const BlockWiseGroupFetch = () => {
           </div>
         </div>
 
-        <div style={styles.topButtons}>
-          <input
-            type="file"
-            accept=".xls,.xlsx"
-            onChange={(e) => {
-              setExcelFile(e.target.files[0]);
-              handleExcelUpload(e.target.files[0]);
-            }}
-            style={{ fontSize: "14px" }}
-          />
+        <div className="file-upload-section">
+          <div className="file-input-wrapper">
+            <input
+              type="file"
+              accept=".xls,.xlsx"
+              onChange={(e) => {
+                setExcelFile(e.target.files[0]);
+                handleExcelUpload(e.target.files[0]);
+              }}
+              id="file-upload"
+              className="file-input"
+            />
+            <label htmlFor="file-upload" className="file-input-label">
+              Choose Excel File
+            </label>
+            <span className="file-name">
+              {excelFile ? excelFile.name : "No file selected"}
+            </span>
+          </div>
           <button
-            style={styles.primaryButton}
+            className="submit-button"
             onClick={handleExcelSubmit}
             disabled={
               !excelFile || !selectedDistrict || !selectedBlock || loading
@@ -211,282 +240,393 @@ const BlockWiseGroupFetch = () => {
         </div>
 
         {previewData.length > 0 && (
-          <div style={{ marginTop: "20px" }}>
-            <h3
-              style={{ fontSize: "16px", fontWeight: "500", color: "#2d3748" }}
-            >
-              Excel Preview ({previewData.length} rows):
-            </h3>
-            <div style={styles.previewContainer}>
-              <div style={styles.previewScrollContainer}>
-                <table style={styles.previewTable}>
-                  <thead>
-                    <tr>
-                      {Object.keys(previewData[0]).map((key) => (
-                        <th key={key} style={styles.previewTableHeader}>
-                          {key}
-                        </th>
-                      ))}
+          <div className="preview-section">
+            <div className="preview-header">
+              <h3>UDISE Codes Preview ({previewData.length} schools)</h3>
+            </div>
+            <div className="table-container">
+              <table className="preview-table">
+                <thead>
+                  <tr>
+                    <th>UDISE Code</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {previewData.map((row, idx) => (
+                    <tr key={idx}>
+                      <td>{row.udise_code}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {previewData.map((row, idx) => (
-                      <tr key={idx}>
-                        {Object.values(row).map((value, i) => (
-                          <td key={i} style={styles.previewTableCell}>
-                            {String(value)}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
       </div>
 
       {showSyncModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <h3 style={styles.modalTitle}>Enter Password</h3>
-            <input
-              type="password"
-              style={styles.input}
-              placeholder="Enter password"
-              value={passwordInput}
-              onChange={(e) => setPasswordInput(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handlePasswordSubmit()}
-            />
-            {passwordError && (
-              <p style={styles.passwordError}>{passwordError}</p>
-            )}
-            <div style={styles.modalButtons}>
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h3>Enter Password</h3>
               <button
-                style={styles.modalButton}
-                onClick={handlePasswordSubmit}
-                disabled={loading}
+                className="modal-close"
+                onClick={() => setShowSyncModal(false)}
               >
-                {loading ? "Processing..." : "Submit"}
+                &times;
               </button>
+            </div>
+            <div className="modal-body">
+              <input
+                type="password"
+                className="password-input"
+                placeholder="Enter password"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handlePasswordSubmit()}
+              />
+              {passwordError && (
+                <p className="error-message">{passwordError}</p>
+              )}
+            </div>
+            <div className="modal-footer">
               <button
-                style={{ ...styles.modalButton, ...styles.cancelButton }}
+                className="modal-button secondary"
                 onClick={() => setShowSyncModal(false)}
                 disabled={loading}
               >
                 Cancel
               </button>
+              <button
+                className="modal-button primary"
+                onClick={handlePasswordSubmit}
+                disabled={loading}
+              >
+                {loading ? "Processing..." : "Submit"}
+              </button>
             </div>
           </div>
         </div>
       )}
+
+      <style>{`
+        .block-wise-container {
+          font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+          padding: 20px;
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+
+        .header-container {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 30px;
+          position: relative;
+        }
+
+        .back-button {
+          position: absolute;
+          left: 0;
+          background: none;
+          border: none;
+          font-size: 16px;
+          color: #4f46e5;
+          cursor: pointer;
+          padding: 8px 12px;
+          border-radius: 4px;
+        }
+
+        .back-button:hover {
+          background-color: #f1f5f9;
+        }
+
+        .title-wrapper {
+          text-align: center;
+          flex-grow: 1;
+        }
+
+        .main-title {
+          font-size: 24px;
+          color: #1e293b;
+          margin: 0;
+        }
+
+        .subtitle {
+          font-size: 14px;
+          color: #64748b;
+          margin-top: 5px;
+        }
+
+        .header-actions {
+          display: flex;
+          gap: 10px;
+        }
+
+        .sync-button, .refresh-button {
+          padding: 8px 16px;
+          border-radius: 6px;
+          font-weight: 500;
+          cursor: pointer;
+          border: 1px solid #e2e8f0;
+        }
+
+        .sync-button {
+          background-color: #4f46e5;
+          color: white;
+          border: none;
+        }
+
+        .sync-button:hover {
+          background-color: #4338ca;
+        }
+
+        .refresh-button {
+          background-color: white;
+          color: #4f46e5;
+        }
+
+        .refresh-button:hover {
+          background-color: #f8fafc;
+        }
+
+        .content-card {
+          background: white;
+          border-radius: 8px;
+          padding: 20px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .filters-container {
+          display: flex;
+          gap: 20px;
+          margin-bottom: 20px;
+        }
+
+        .filter-group {
+          flex: 1;
+        }
+
+        .filter-label {
+          display: block;
+          margin-bottom: 8px;
+          font-size: 14px;
+          color: #64748b;
+        }
+
+        .filter-select {
+          width: 100%;
+          padding: 10px;
+          border-radius: 6px;
+          border: 1px solid #e2e8f0;
+          font-size: 14px;
+        }
+
+        .file-upload-section {
+          display: flex;
+          gap: 15px;
+          align-items: center;
+          margin-bottom: 20px;
+        }
+
+        .file-input-wrapper {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .file-input {
+          display: none;
+        }
+
+        .file-input-label {
+          padding: 10px 15px;
+          background-color: #f1f5f9;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+          white-space: nowrap;
+        }
+
+        .file-input-label:hover {
+          background-color: #e2e8f0;
+        }
+
+        .file-name {
+          font-size: 14px;
+          color: #64748b;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .submit-button {
+          padding: 10px 20px;
+          background-color: #4f46e5;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+        }
+
+        .submit-button:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+
+        .submit-button:hover:not(:disabled) {
+          background-color: #4338ca;
+        }
+
+        .preview-section {
+          margin-top: 30px;
+        }
+
+        .preview-header {
+          margin-bottom: 15px;
+        }
+
+        .preview-header h3 {
+          font-size: 16px;
+          color: #1e293b;
+          margin: 0;
+        }
+
+        .table-container {
+          border: 1px solid #e2e8f0;
+          border-radius: 6px;
+          overflow: hidden;
+          max-height: 400px;
+          overflow-y: auto;
+        }
+
+        .preview-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 14px;
+        }
+
+        .preview-table th {
+          background-color: #f8fafc;
+          padding: 12px;
+          text-align: left;
+          font-weight: 500;
+          color: #475569;
+          position: sticky;
+          top: 0;
+        }
+
+        .preview-table td {
+          padding: 12px;
+          border-top: 1px solid #f1f5f9;
+          color: #475569;
+        }
+
+        .preview-table tr:hover td {
+          background-color: #f9fafb;
+        }
+
+        /* Modal styles */
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0,0,0,0.5);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1000;
+        }
+
+        .modal {
+          background-color: white;
+          border-radius: 8px;
+          width: 100%;
+          max-width: 400px;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .modal-header {
+          padding: 16px;
+          border-bottom: 1px solid #f1f5f9;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .modal-header h3 {
+          margin: 0;
+          font-size: 18px;
+        }
+
+        .modal-close {
+          background: none;
+          border: none;
+          font-size: 20px;
+          cursor: pointer;
+          color: #94a3b8;
+        }
+
+        .modal-body {
+          padding: 16px;
+        }
+
+        .password-input {
+          width: 100%;
+          padding: 10px;
+          border-radius: 6px;
+          border: 1px solid #e2e8f0;
+          font-size: 14px;
+          margin-bottom: 10px;
+        }
+
+        .error-message {
+          color: #dc2626;
+          font-size: 13px;
+          margin-top: 5px;
+        }
+
+        .modal-footer {
+          padding: 16px;
+          border-top: 1px solid #f1f5f9;
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+        }
+
+        .modal-button {
+          padding: 8px 16px;
+          border-radius: 6px;
+          font-size: 14px;
+          cursor: pointer;
+        }
+
+        .modal-button.primary {
+          background-color: #4f46e5;
+          color: white;
+          border: none;
+        }
+
+        .modal-button.primary:hover {
+          background-color: #4338ca;
+        }
+
+        .modal-button.secondary {
+          background-color: white;
+          color: #64748b;
+          border: 1px solid #e2e8f0;
+        }
+
+        .modal-button.secondary:hover {
+          background-color: #f8fafc;
+        }
+      `}</style>
     </div>
   );
 };
 
 export default BlockWiseGroupFetch;
-
-const styles = {
-  container: {
-    fontFamily: "'Segoe UI', 'Roboto', sans-serif",
-    padding: "20px",
-    backgroundColor: "#f5f7fa",
-    minHeight: "100vh",
-    maxWidth: "1000px",
-    margin: "0 auto",
-  },
-  headerContainer: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "24px",
-    paddingBottom: "16px",
-    borderBottom: "1px solid #e0e6ed",
-  },
-  header: {
-    fontSize: "28px",
-    fontWeight: "600",
-    color: "#2d3748",
-    margin: "0",
-  },
-  headerActions: {
-    display: "flex",
-    gap: "12px",
-  },
-  refreshButton: {
-    padding: "8px 16px",
-    border: "1px solid #e2e8f0",
-    backgroundColor: "#ffffff",
-    color: "#4a5568",
-    borderRadius: "6px",
-    cursor: "pointer",
-    fontWeight: "500",
-  },
-  controlsContainer: {
-    backgroundColor: "#ffffff",
-    borderRadius: "12px",
-    padding: "20px",
-    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
-    marginBottom: "24px",
-  },
-  topButtons: {
-    display: "flex",
-    gap: "12px",
-    marginTop: "20px",
-    alignItems: "center",
-  },
-  primaryButton: {
-    padding: "10px 20px",
-    border: "none",
-    backgroundColor: "#4c6ef5",
-    color: "white",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontWeight: "500",
-    fontSize: "15px",
-  },
-  filtersContainer: {
-    display: "flex",
-    gap: "20px",
-    flexWrap: "wrap",
-  },
-  filterItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-  },
-  filterLabel: {
-    fontWeight: "500",
-    color: "#4a5568",
-    fontSize: "15px",
-  },
-  filterSelect: {
-    padding: "9px 12px",
-    borderRadius: "8px",
-    border: "1px solid #e2e8f0",
-    backgroundColor: "#fff",
-    fontSize: "14px",
-    minWidth: "150px",
-  },
-  modalOverlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
-  },
-  modal: {
-    backgroundColor: "#fff",
-    padding: "30px",
-    borderRadius: "12px",
-    boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
-    minWidth: "350px",
-    maxWidth: "90%",
-  },
-  modalTitle: {
-    marginTop: "0",
-    marginBottom: "20px",
-    color: "#1e293b",
-  },
-  input: {
-    width: "100%",
-    padding: "12px",
-    marginBottom: "20px",
-    fontSize: "15px",
-    borderRadius: "8px",
-    border: "1px solid #cbd5e1",
-    boxSizing: "border-box",
-  },
-  modalButtons: {
-    display: "flex",
-    justifyContent: "flex-end",
-    gap: "10px",
-  },
-  modalButton: {
-    padding: "10px 20px",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
-    backgroundColor: "#4c6ef5",
-    color: "white",
-    fontWeight: "500",
-  },
-  cancelButton: {
-    backgroundColor: "#94a3b8",
-  },
-  passwordError: {
-    color: "#dc2626",
-    marginTop: "-15px",
-    marginBottom: "15px",
-    fontSize: "14px",
-  },
-  // New improved preview styles
-  previewContainer: {
-    border: "1px solid #e2e8f0",
-    borderRadius: "8px",
-    overflow: "hidden",
-    marginTop: "10px",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-  },
-  previewScrollContainer: {
-    maxHeight: "400px",
-    overflow: "auto",
-    position: "relative",
-  },
-  previewTable: {
-    width: "100%",
-    borderCollapse: "collapse",
-    fontSize: "14px",
-  },
-  previewTableHeader: {
-    padding: "10px",
-    textAlign: "left",
-    backgroundColor: "#f1f5f9",
-    position: "sticky",
-    top: 0,
-    borderBottom: "1px solid #e2e8f0",
-    fontWeight: "500",
-    color: "#334155",
-  },
-  previewTableCell: {
-    padding: "8px 10px",
-    borderBottom: "1px solid #e2e8f0",
-    whiteSpace: "nowrap",
-    color: "#475569",
-  },
-  previewTableRow: {
-    "&:hover": {
-      backgroundColor: "#f8fafc",
-    },
-  },
-  udiseListContainer: {
-    maxHeight: "200px",
-    overflowY: "auto",
-    marginTop: "10px",
-    padding: "10px",
-    background: "#fff",
-    border: "1px solid #e2e8f0",
-    borderRadius: "8px",
-    boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-  },
-  udiseListItem: {
-    fontSize: "14px",
-    color: "#475569",
-    padding: "4px 0",
-    "&:hover": {
-      color: "#1e40af",
-    },
-  },
-  previewTitle: {
-    fontSize: "16px",
-    fontWeight: "500",
-    color: "#2d3748",
-    marginBottom: "8px",
-  },
-};

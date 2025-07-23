@@ -17,11 +17,7 @@ const App = () => {
         <Route path="/HomePage" element={<HomePage />} />
         <Route path="/BlockWiseGroupFetch" element={<BlockWiseGroupFetch />} />
         <Route path="/BlockWiseNumberAdd" element={<BlockWiseNumberAdd />} />
-        
-        <Route
-          path="/"
-          element={<Navigate to="/HomePage" replace />}
-        />
+        <Route path="/" element={<Navigate to="/HomePage" replace />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Router>

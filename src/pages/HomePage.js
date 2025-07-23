@@ -4,49 +4,96 @@ import { useNavigate } from "react-router-dom";
 const HomePage = () => {
   const navigate = useNavigate();
 
-  const cardStyle = {
-    display: "inline-block",
-    width: "260px",
-    height: "180px",
-    margin: "20px",
-    borderRadius: "16px",
-    boxShadow: "0 8px 16px rgba(0, 0, 0, 0.15)",
+  // Main container style
+  const containerStyle = {
+    maxWidth: "1200px",
+    margin: "0 auto",
+    padding: "40px 20px",
+    fontFamily: "'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+    color: "#2d3748",
+  };
+
+  // Header styles
+  const headerStyle = {
     textAlign: "center",
-    padding: "30px 20px",
-    backgroundColor: "#ffffff",
-    fontFamily: "Segoe UI, sans-serif",
+    marginBottom: "60px",
+  };
+
+  const headingStyle = {
+    fontSize: "36px",
+    fontWeight: "600",
+    marginBottom: "16px",
+    color: "#1a365d",
+  };
+
+  const subHeadingStyle = {
+    fontSize: "18px",
+    color: "#4a5568",
+    maxWidth: "700px",
+    margin: "0 auto",
+    lineHeight: "1.6",
+  };
+
+  // Cards container
+  const cardsContainerStyle = {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+    gap: "30px",
+    justifyContent: "center",
+  };
+
+  // Card styles
+  const cardStyle = {
+    background: "#ffffff",
+    borderRadius: "12px",
+    padding: "30px",
+    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
+    transition: "all 0.3s ease",
+    border: "1px solid #e2e8f0",
+    textAlign: "center",
+    cursor: "pointer",
+    height: "100%",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
   };
 
   const cardHoverStyle = {
     transform: "translateY(-5px)",
-    boxShadow: "0 12px 20px rgba(0, 0, 0, 0.25)",
+    boxShadow: "0 10px 15px rgba(0, 0, 0, 0.1)",
+    borderColor: "#cbd5e0",
   };
 
-  const containerStyle = {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    flexWrap: "wrap",
-    marginTop: "80px",
-    gap: "40px",
-  };
-
-  const headingStyle = {
-    fontSize: "28px",
+  const cardTitleStyle = {
+    fontSize: "20px",
     fontWeight: "600",
-    marginBottom: "40px",
-    fontFamily: "Segoe UI, sans-serif",
-    color: "#333",
+    marginBottom: "16px",
+    color: "#2d3748",
+  };
+
+  const cardDescriptionStyle = {
+    fontSize: "15px",
+    color: "#4a5568",
+    marginBottom: "24px",
+    lineHeight: "1.5",
+  };
+
+  const iconStyle = {
+    fontSize: "48px",
+    marginBottom: "20px",
+    color: "#4299e1",
   };
 
   const buttonStyle = {
-    marginTop: "20px",
-    padding: "10px 20px",
+    padding: "12px 24px",
     fontSize: "16px",
+    fontWeight: "500",
     borderRadius: "8px",
     border: "none",
     cursor: "pointer",
-    transition: "background-color 0.3s",
+    transition: "all 0.2s ease",
+    alignSelf: "center",
+    width: "120px",
   };
 
   const [hovered, setHovered] = React.useState("");
@@ -55,53 +102,77 @@ const HomePage = () => {
     navigate(path);
   };
 
-  return (
-    <div style={{ textAlign: "center", padding: "20px" }}>
-      <h2 style={headingStyle}>Welcome to Dashboard</h2>
-      <div style={containerStyle}>
-        <div
-          style={{
-            ...cardStyle,
-            ...(hovered === "groupFetch" ? cardHoverStyle : {}),
-          }}
-          onMouseEnter={() => setHovered("groupFetch")}
-          onMouseLeave={() => setHovered("")}
-        >
-          <h3 style={{ fontSize: "20px", color: "#007BFF" }}>Group Fetch</h3>
-          <button
-            style={{
-              ...buttonStyle,
-              backgroundColor: "#007BFF",
-              color: "#fff",
-            }}
-            onClick={() => handleNavigate("/BlockWiseGroupFetch")}
-          >
-            Go
-          </button>
-        </div>
+  // Dashboard cards data
+  const dashboardCards = [
+    {
+      id: "groupFetch",
+      title: "Group Fetch",
+      description:
+        "Retrieve and manage group information with advanced filtering options.",
+      buttonText: "Access",
+      buttonColor: "#4299e1",
+      icon: "👥",
+    },
+    {
+      id: "addNumbers",
+      title: "Add Numbers",
+      description:
+        "Easily add new numbers to existing groups with bulk import support.",
+      buttonText: "Add Now",
+      buttonColor: "#48bb78",
+      icon: "➕",
+    },
+  ];
 
-        <div
-          style={{
-            ...cardStyle,
-            ...(hovered === "addNumbers" ? cardHoverStyle : {}),
-          }}
-          onMouseEnter={() => setHovered("addNumbers")}
-          onMouseLeave={() => setHovered("")}
-        >
-          <h3 style={{ fontSize: "20px", color: "#28a745" }}>
-            Add Numbers to Group
-          </h3>
-          <button
+  return (
+    <div style={containerStyle}>
+      <header style={headerStyle}>
+        <h1 style={headingStyle}>Admin Dashboard</h1>
+        <p style={subHeadingStyle}>
+          Manage your groups and numbers efficiently with our comprehensive
+          dashboard tools. Access all features with just one click.
+        </p>
+      </header>
+
+      <div style={cardsContainerStyle}>
+        {dashboardCards.map((card) => (
+          <div
+            key={card.id}
             style={{
-              ...buttonStyle,
-              backgroundColor: "#28a745",
-              color: "#fff",
+              ...cardStyle,
+              ...(hovered === card.id ? cardHoverStyle : {}),
             }}
-            onClick={() => handleNavigate("/BlockWiseNumberAdd")}
+            onMouseEnter={() => setHovered(card.id)}
+            onMouseLeave={() => setHovered("")}
+            onClick={() =>
+              handleNavigate(
+                `/${
+                  card.id === "groupFetch"
+                    ? "BlockWiseGroupFetch"
+                    : "BlockWiseNumberAdd"
+                }`
+              )
+            }
           >
-            Go
-          </button>
-        </div>
+            <div>
+              <div style={iconStyle}>{card.icon}</div>
+              <h3 style={cardTitleStyle}>{card.title}</h3>
+              <p style={cardDescriptionStyle}>{card.description}</p>
+            </div>
+            <button
+              style={{
+                ...buttonStyle,
+                backgroundColor: card.buttonColor,
+                color: "#ffffff",
+                ":hover": {
+                  backgroundColor: `${card.buttonColor}dd`,
+                },
+              }}
+            >
+              {card.buttonText}
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );
