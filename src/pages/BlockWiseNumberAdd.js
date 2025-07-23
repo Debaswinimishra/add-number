@@ -19,8 +19,8 @@ const BlockWiseGroupFetch = () => {
     get_status()
       .then((res) => {
         console.log("response----------->", res);
-        if (res?.data) {
-          setTableData(res.data);
+        if (res?.data?.data) {
+          setTableData(res.data.data);
         }
       })
       .catch((error) => {
@@ -33,7 +33,7 @@ const BlockWiseGroupFetch = () => {
 
   useEffect(() => {
     fetchAllData();
-    const intervalId = setInterval(fetchAllData, 10000);
+    const intervalId = setInterval(fetchAllData, 30000);
 
     return () => {
       clearInterval(intervalId);
@@ -131,31 +131,30 @@ const BlockWiseGroupFetch = () => {
       </div>
 
       <div style={styles.controlsContainer}>
-        <button
-          style={{
-            ...styles.button,
-            ...styles.primaryButton,
-          }}
-          onClick={() => setShowAddModal(true)}
-          aria-label="Add mobile number"
-        >
-          Add Number
-        </button>
-        <button
-          style={{
-            ...styles.button,
-            ...styles.primaryButton,
-          }}
-          onClick={() => window.location.reload()}
-        >
-          Refresh
-        </button>
-
-        <div style={styles.refreshInfo}>
+        <div style={styles.leftControls}>
+          <button
+            style={{
+              ...styles.button,
+              ...styles.primaryButton,
+            }}
+            onClick={() => setShowAddModal(true)}
+            aria-label="Add mobile number"
+          >
+            Add Number
+          </button>
+        </div>
+        <div style={styles.rightControls}>
           <svg
             style={styles.refreshIcon}
             viewBox="0 0 20 20"
             fill="currentColor"
+            onClick={() => {
+              if (
+                window.confirm("Are you sure you want to refresh the page?")
+              ) {
+                window.location.reload();
+              }
+            }}
           >
             <path
               fillRule="evenodd"
@@ -163,8 +162,12 @@ const BlockWiseGroupFetch = () => {
               clipRule="evenodd"
             />
           </svg>
-          <span>Data refreshes every 10 seconds</span>
         </div>
+      </div>
+
+      {/* Data Count */}
+      <div style={styles.dataCountContainer}>
+        Total Records: {tableData.length}
       </div>
 
       {/* Data Table */}
@@ -175,42 +178,48 @@ const BlockWiseGroupFetch = () => {
             <p>Loading data...</p>
           </div>
         ) : tableData.length > 0 ? (
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Mobile</th>
-                <th style={styles.th}>District</th>
-                <th style={styles.th}>Block</th>
-                <th style={styles.th}>Status</th>
-                <th style={styles.th}>Group</th>
-                <th style={styles.th}>Added On</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tableData.map((item, index) => (
-                <tr key={index} style={styles.tr}>
-                  <td style={styles.td}>{item.child_number}</td>
-                  <td style={styles.td}>{item.district}</td>
-                  <td style={styles.td}>{item.block}</td>
-                  <td style={styles.td}>
-                    <span
-                      style={{
-                        ...styles.statusBadge,
-                        backgroundColor:
-                          item.child_status === "added" ? "#d1fae5" : "#fee2e2",
-                        color:
-                          item.child_status === "added" ? "#065f46" : "#b91c1c",
-                      }}
-                    >
-                      {item.child_status}
-                    </span>
-                  </td>
-                  <td style={styles.td}>{item.child_remark}</td>
-                  <td style={styles.td}>{item.groupname}</td>
+          <div style={styles.tableWrapper}>
+            <table style={styles.table}>
+              <thead style={styles.tableHeader}>
+                <tr>
+                  <th style={styles.th}>Mobile</th>
+                  <th style={styles.th}>District</th>
+                  <th style={styles.th}>Block</th>
+                  <th style={styles.th}>Status</th>
+                  <th style={styles.th}>Group</th>
+                  <th style={styles.th}>Added On</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody style={styles.tableBody}>
+                {tableData.map((item, index) => (
+                  <tr key={index} style={styles.tr}>
+                    <td style={styles.td}>{item.child_number}</td>
+                    <td style={styles.td}>{item.district}</td>
+                    <td style={styles.td}>{item.block}</td>
+                    <td style={styles.td}>
+                      <span
+                        style={{
+                          ...styles.statusBadge,
+                          backgroundColor:
+                            item.child_status === "added"
+                              ? "#d1fae5"
+                              : "#fee2e2",
+                          color:
+                            item.child_status === "added"
+                              ? "#065f46"
+                              : "#b91c1c",
+                        }}
+                      >
+                        {item.child_status}
+                      </span>
+                    </td>
+                    <td style={styles.td}>{item.child_remark}</td>
+                    <td style={styles.td}>{item.groupname}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
           <div style={styles.noDataContainer}>
             <p>No data available</p>
@@ -401,9 +410,19 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: "24px",
+    marginBottom: "16px",
     flexWrap: "wrap",
     gap: "16px",
+  },
+  leftControls: {
+    display: "flex",
+    gap: "16px",
+    alignItems: "right",
+  },
+  rightControls: {
+    display: "flex",
+    gap: "16px",
+    alignItems: "center",
   },
   refreshInfo: {
     display: "flex",
@@ -417,17 +436,38 @@ const styles = {
     height: "16px",
     color: "#6b7280",
   },
+  dataCountContainer: {
+    backgroundColor: "#f3f4f6",
+    padding: "8px 16px",
+    borderRadius: "6px",
+    marginBottom: "16px",
+    fontSize: "14px",
+    fontWeight: "500",
+    color: "#374151",
+  },
   tableContainer: {
     backgroundColor: "#fff",
     borderRadius: "8px",
     overflow: "hidden",
     boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-    overflowX: "auto",
+  },
+  tableWrapper: {
+    maxHeight: "500px",
+    overflowY: "auto",
+    position: "relative",
   },
   table: {
     width: "100%",
     borderCollapse: "collapse",
     fontSize: "14px",
+  },
+  tableHeader: {
+    position: "sticky",
+    top: 0,
+    zIndex: 10,
+  },
+  tableBody: {
+    overflowY: "auto",
   },
   th: {
     padding: "12px 16px",
@@ -436,6 +476,8 @@ const styles = {
     color: "#374151",
     fontWeight: "600",
     borderBottom: "1px solid #e5e7eb",
+    position: "sticky",
+    top: 0,
   },
   tr: {
     borderBottom: "1px solid #e5e7eb",
