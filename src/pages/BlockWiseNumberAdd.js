@@ -461,48 +461,8 @@ const BlockWiseGroupFetch = () => {
                 : "No data available to export"
             }
           >
-            <svg
-              style={{
-                width: "16px",
-                height: "16px",
-                color: filteredData.length > 0 ? "#4f46e5" : "#9ca3af",
-              }}
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Download CSV
+            Download
           </button>
-        </div>
-      </div>
-
-      <div style={styles.statsContainer}>
-        <div style={styles.statCard}>
-          <div style={styles.statValue}>{statusCounts.total || 0}</div>
-          <div style={styles.statLabel}>Total Numbers</div>
-        </div>
-        <div style={{ ...styles.statCard, backgroundColor: "#e6fffa" }}>
-          <div style={{ ...styles.statValue, color: "#38b2ac" }}>
-            {statusCounts.added || 0}
-          </div>
-          <div style={styles.statLabel}>Added</div>
-        </div>
-        <div style={{ ...styles.statCard, backgroundColor: "#ebf4ff" }}>
-          <div style={{ ...styles.statValue, color: "#5a67d8" }}>
-            {statusCounts["previously added"] || 0}
-          </div>
-          <div style={styles.statLabel}>Previously Added</div>
-        </div>
-        <div style={{ ...styles.statCard, backgroundColor: "#fff5f5" }}>
-          <div style={{ ...styles.statValue, color: "#f56565" }}>
-            {statusCounts["not added"] || 0}
-          </div>
-          <div style={styles.statLabel}>Not Added</div>
         </div>
       </div>
 
@@ -622,7 +582,7 @@ const BlockWiseGroupFetch = () => {
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
             <div style={styles.modalHeaderContainer}>
-              <h3 style={styles.modalHeader}>Add Mobile Number</h3>
+              <h3 style={styles.modalHeader}>Add Mobile Number </h3>
               <p style={styles.modalSubHeader}>
                 Select district and block to add a number
               </p>
