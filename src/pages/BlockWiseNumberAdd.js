@@ -42,11 +42,6 @@ const BlockWiseGroupFetch = () => {
 
   useEffect(() => {
     fetchAllData();
-    // const intervalId = setInterval(fetchAllData, 30000);
-
-    // return () => {
-    //   clearInterval(intervalId);
-    // };
   }, [filterDistrict, filterBlock]);
 
   useEffect(() => {
@@ -100,7 +95,7 @@ const BlockWiseGroupFetch = () => {
       setNumberInput("");
       setValidationError("");
       setShowAddModal(false);
-      fetchAllData(); // Refresh data after adding
+      fetchAllData();
     } catch (error) {
       console.error("Error adding number:", error);
       alert("❌ An error occurred while adding the number.");
@@ -118,12 +113,60 @@ const BlockWiseGroupFetch = () => {
   const handleGoBack = () => {
     navigate(-1);
   };
+  const extractWhatsAppNumber = (id) => {
+    if (!id) return "";
+    return id.includes("@") ? id.split("@")[0] : id;
+  };
 
-  // const handleResetFilters = () => {
-  //   setFilterDistrict("");
-  //   setFilterBlock("");
-  //   setStatusFilter("all");
-  // };
+  const convertToCSV = (data) => {
+    const headers = [
+      "Sl. No.",
+      "Mobile no. added",
+      "District",
+      "Block",
+      "Status",
+      "Group",
+      "Group admin no.",
+      "Reason for not added in group",
+    ];
+
+    const rows = data.map((item, index) => [
+      index + 1,
+      item.child_number,
+      item.district,
+      item.block,
+      item.child_status,
+      item.groupname,
+      extractWhatsAppNumber(item.parent_userid), // Use the helper function here
+      item.child_remark || "",
+    ]);
+
+    return [headers, ...rows]
+      .map((row) =>
+        row
+          .map((item) =>
+            typeof item === "string" ? `"${item.replace(/"/g, '""')}"` : item
+          )
+          .join(",")
+      )
+      .join("\n");
+  };
+
+  const downloadCSV = (data) => {
+    const csvContent = convertToCSV(data);
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `blockwise_data_${new Date().toISOString().slice(0, 10)}.csv`
+    );
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const filteredData = tableData.filter((item) => {
     const statusMatch =
@@ -226,16 +269,6 @@ const BlockWiseGroupFetch = () => {
               <option value="not added">Not Added</option>
             </select>
           </div>
-          {/* <button
-            style={{
-              ...styles.button,
-              ...styles.secondaryButton,
-              padding: "8px 12px",
-            }}
-            onClick={handleResetFilters}
-          >
-            Reset
-          </button> */}
           <svg
             style={styles.refreshIcon}
             viewBox="0 0 20 20"
@@ -248,6 +281,19 @@ const BlockWiseGroupFetch = () => {
               clipRule="evenodd"
             />
           </svg>
+          <button
+            style={{
+              ...styles.button,
+              ...styles.secondaryButton,
+              padding: "8px 12px",
+              opacity: filteredData.length > 0 ? 1 : 0.6,
+              cursor: filteredData.length > 0 ? "pointer" : "not-allowed",
+            }}
+            onClick={() => downloadCSV(filteredData)}
+            disabled={filteredData.length === 0}
+          >
+            Download
+          </button>
         </div>
       </div>
 
@@ -272,6 +318,7 @@ const BlockWiseGroupFetch = () => {
                   <th style={styles.th}>Block</th>
                   <th style={styles.th}>Status</th>
                   <th style={styles.th}>Group</th>
+                  <th style={styles.th}>Group admin no.</th>
                   <th style={styles.th}>Reason for not added in group</th>
                 </tr>
               </thead>
@@ -304,6 +351,7 @@ const BlockWiseGroupFetch = () => {
                       </span>
                     </td>
                     <td style={styles.td}>{item.groupname}</td>
+                    <td style={styles.td}>{item.parent_userid}</td>
                     <td style={styles.td}>{item.child_remark}</td>
                   </tr>
                 ))}
@@ -524,6 +572,7 @@ const styles = {
     width: "16px",
     height: "16px",
     color: "#6b7280",
+    cursor: "pointer",
   },
   dataCountContainer: {
     backgroundColor: "#f3f4f6",
