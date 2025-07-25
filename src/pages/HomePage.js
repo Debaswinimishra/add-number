@@ -30,13 +30,13 @@ const HomePage = () => {
   return (
     <div style={styles.container}>
       <header style={styles.header}>
-        <h1 style={styles.heading}>Contact Manager</h1>
+        <h1 style={styles.heading}>Admin Dashboard</h1>
         <p style={styles.subHeading}>
           Simple tools to organize your contacts efficiently
         </p>
       </header>
 
-      <div style={styles.cardsContainer}>
+      {/* <div style={styles.cardsContainer}>
         {dashboardCards.map((card) => (
           <div
             key={card.id}
@@ -72,10 +72,10 @@ const HomePage = () => {
             </button>
           </div>
         ))}
-      </div>
+      </div> */}
 
       <footer style={styles.footer}>
-        © {new Date().getFullYear()} Contact Manager
+        © {new Date().getFullYear()} Contact Admin
       </footer>
     </div>
   );

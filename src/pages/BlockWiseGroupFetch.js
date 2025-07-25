@@ -176,7 +176,7 @@ const BlockWiseGroupFetch = () => {
     <div className="block-wise-container">
       <div className="header-container">
         <div className="title-wrapper">
-          <h1>School Group Manager</h1>
+          <h1>Blockwise Data Upload</h1>
           <p>Manage school groups by block and district</p>
         </div>
         <div className="header-actions">
