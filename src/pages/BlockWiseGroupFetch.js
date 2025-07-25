@@ -177,7 +177,7 @@ const BlockWiseGroupFetch = () => {
       <div className="header-container">
         <div className="title-wrapper">
           <h1>Blockwise Data Upload</h1>
-          <p>Manage school groups by block and district</p>
+          <p>Upload data organized by district and block.</p>
         </div>
         <div className="header-actions">
           <button className="sync-button" onClick={handleSyncClick}>
@@ -203,11 +203,9 @@ const BlockWiseGroupFetch = () => {
       </div>
 
       <div className="content-card">
-        {/* Step 1: Location Selection */}
         {activeStep === 1 && (
           <div className="step-content">
-            <h2>Select School Location</h2>
-            <p>Choose the district and block to manage school groups</p>
+            <h2>Select District & Block</h2>
 
             <div className="filters-container">
               <div className="filter-group">
@@ -244,30 +242,12 @@ const BlockWiseGroupFetch = () => {
                 </select>
               </div>
             </div>
-
-            {selectedDistrict && selectedBlock && (
-              <div className="info-box">
-                <div>
-                  <p>
-                    <strong>Selected Location:</strong> {selectedBlock},{" "}
-                    {selectedDistrict}
-                  </p>
-                  <p>
-                    <strong>Total Groups:</strong>{" "}
-                    {fetchingCount ? "Loading..." : groupCount}
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
         {/* Step 2: File Upload */}
         {activeStep === 2 && (
           <div className="step-content">
-            <h2>Upload School Data</h2>
-            <p>Upload an Excel file containing UDISE codes of schools</p>
-
             <div className="file-upload-section">
               <div className="file-input-wrapper">
                 <input
@@ -290,9 +270,8 @@ const BlockWiseGroupFetch = () => {
               <div className="file-requirements">
                 <h4>File Requirements:</h4>
                 <ul>
-                  <li>Excel format (.xls or .xlsx)</li>
-                  <li>Should contain UDISE codes in any column</li>
-                  <li>Maximum file size: 5MB</li>
+                  <li>Excel format (.xlsx)</li>
+                  <li>File should contain Udise_Code in any column</li>
                 </ul>
               </div>
             </div>
@@ -303,13 +282,12 @@ const BlockWiseGroupFetch = () => {
         {activeStep === 3 && (
           <div className="step-content">
             <h2>Review & Submit</h2>
-            <p>Verify the UDISE codes before submission</p>
 
             {previewData.length > 0 ? (
               <div className="preview-section">
                 <div className="preview-header">
                   <h3>
-                    Found {previewData.length} schools in {selectedBlock},{" "}
+                    Found {previewData.length} udise in {selectedBlock},{" "}
                     {selectedDistrict}
                   </h3>
                 </div>
@@ -329,7 +307,7 @@ const BlockWiseGroupFetch = () => {
                       {previewData.length > 5 && (
                         <tr>
                           <td className="more-items">
-                            + {previewData.length - 5} more schools
+                            + {previewData.length - 5} more udise
                           </td>
                         </tr>
                       )}
