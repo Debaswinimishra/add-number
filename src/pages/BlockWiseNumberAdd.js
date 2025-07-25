@@ -17,9 +17,13 @@ const BlockWiseGroupFetch = () => {
   const [tableData, setTableData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const fetchAllData = () => {
     setIsLoading(true);
+    setErrorMessage("");
     const params = {
       district: filterDistrict.toLowerCase(),
       block: filterBlock.toLowerCase(),
@@ -27,13 +31,15 @@ const BlockWiseGroupFetch = () => {
 
     get_status(params)
       .then((res) => {
-        console.log("response----------->", res);
         if (res?.data?.data) {
           setTableData(res.data.data);
+        } else {
+          setErrorMessage("No data available for the selected filters");
         }
       })
       .catch((error) => {
         console.error("Error fetching data:", error);
+        setErrorMessage("Failed to fetch data. Please try again.");
       })
       .finally(() => {
         setIsLoading(false);
@@ -85,11 +91,13 @@ const BlockWiseGroupFetch = () => {
       const res = await add_number_to_group(payload);
 
       if (res?.status) {
-        alert(
+        setSuccessMessage(
           `✅ +91${numberInput} added successfully to ${selectedDistrict} / ${selectedBlock}`
         );
+        setTimeout(() => setSuccessMessage(""), 5000);
       } else {
-        alert(`❌ Failed to add number. `);
+        setErrorMessage(`Failed to add number. ${res?.message || ""}`);
+        setTimeout(() => setErrorMessage(""), 5000);
       }
 
       setNumberInput("");
@@ -98,7 +106,8 @@ const BlockWiseGroupFetch = () => {
       fetchAllData();
     } catch (error) {
       console.error("Error adding number:", error);
-      alert("❌ An error occurred while adding the number.");
+      setErrorMessage("An error occurred while adding the number.");
+      setTimeout(() => setErrorMessage(""), 5000);
     }
   };
 
@@ -113,6 +122,7 @@ const BlockWiseGroupFetch = () => {
   const handleGoBack = () => {
     navigate(-1);
   };
+
   const extractWhatsAppNumber = (id) => {
     if (!id) return "";
     return id.includes("@") ? id.split("@")[0] : id;
@@ -137,7 +147,7 @@ const BlockWiseGroupFetch = () => {
       item.block,
       item.child_status,
       item.groupname,
-      extractWhatsAppNumber(item.parent_userid), // Use the helper function here
+      extractWhatsAppNumber(item.parent_userid),
       item.child_remark || "",
     ]);
 
@@ -176,14 +186,64 @@ const BlockWiseGroupFetch = () => {
       item.district.toLowerCase() === filterDistrict.toLowerCase();
     const blockMatch =
       !filterBlock || item.block.toLowerCase() === filterBlock.toLowerCase();
+    const searchMatch =
+      !searchQuery ||
+      item.child_number.includes(searchQuery) ||
+      item.district.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.block.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.groupname?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.parent_userid?.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return statusMatch && districtMatch && blockMatch;
+    return statusMatch && districtMatch && blockMatch && searchMatch;
   });
+
+  const statusCounts = tableData.reduce(
+    (acc, item) => {
+      acc[item.child_status] = (acc[item.child_status] || 0) + 1;
+      acc.total++;
+      return acc;
+    },
+    { total: 0 }
+  );
 
   return (
     <div style={styles.container}>
+      {/* Notification messages */}
+      {successMessage && (
+        <div style={styles.successNotification}>
+          <svg
+            style={styles.notificationIcon}
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+              clipRule="evenodd"
+            />
+          </svg>
+          {successMessage}
+        </div>
+      )}
+      {errorMessage && (
+        <div style={styles.errorNotification}>
+          <svg
+            style={styles.notificationIcon}
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+              clipRule="evenodd"
+            />
+          </svg>
+          {errorMessage}
+        </div>
+      )}
+
       <div style={styles.headerContainer}>
-        <button
+        {/* <button
           onClick={handleGoBack}
           style={styles.backButton}
           aria-label="Go back"
@@ -202,10 +262,12 @@ const BlockWiseGroupFetch = () => {
             <line x1="19" y1="12" x2="5" y2="12"></line>
             <polyline points="12 19 5 12 12 5"></polyline>
           </svg>
-        </button>
+        </button> */}
         <div>
-          <h1 style={styles.header}>Block-wise Mobile Number Add</h1>
-          <p style={styles.subHeader}>Add mobile numbers to specific blocks</p>
+          <h1 style={styles.header}>Block-wise Mobile Number Management</h1>
+          <p style={styles.subHeader}>
+            Add and manage mobile numbers for specific blocks
+          </p>
         </div>
       </div>
 
@@ -213,14 +275,87 @@ const BlockWiseGroupFetch = () => {
         <div style={styles.leftControls}>
           <button
             style={{
-              ...styles.button,
               ...styles.primaryButton,
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 16px",
+              borderRadius: "6px",
+              backgroundColor: "#4f46e5",
+              color: "white",
+              border: "none",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "500",
+              transition: "background-color 0.2s",
+              ":hover": {
+                backgroundColor: "#4338ca",
+              },
             }}
             onClick={() => setShowAddModal(true)}
             aria-label="Add mobile number"
           >
+            <svg
+              style={{
+                width: "16px",
+                height: "16px",
+              }}
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                clipRule="evenodd"
+              />
+            </svg>
             Add Number
           </button>
+
+          <div
+            style={{
+              position: "relative",
+              display: "flex",
+              alignItems: "center",
+              marginLeft: "12px",
+            }}
+          >
+            <svg
+              style={{
+                position: "absolute",
+                left: "12px",
+                width: "16px",
+                height: "16px",
+                color: "#9ca3af",
+              }}
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                padding: "8px 12px 8px 36px",
+                borderRadius: "6px",
+                border: "1px solid #d1d5db",
+                fontSize: "14px",
+                width: "200px",
+                ":focus": {
+                  outline: "none",
+                  borderColor: "#4f46e5",
+                  boxShadow: "0 0 0 3px rgba(79, 70, 229, 0.1)",
+                },
+              }}
+            />
+          </div>
         </div>
         <div style={styles.rightControls}>
           <div style={styles.filterItem}>
@@ -264,41 +399,111 @@ const BlockWiseGroupFetch = () => {
               aria-label="Filter by status"
             >
               <option value="all">All Status</option>
-              <option value="added">Added</option>
-              <option value="previously added">Previously Added</option>
-              <option value="not added">Not Added</option>
+              <option value="added">Added ({statusCounts.added || 0})</option>
+              <option value="previously added">
+                Previously Added ({statusCounts["previously added"] || 0})
+              </option>
+              <option value="not added">
+                Not Added ({statusCounts["not added"] || 0})
+              </option>
             </select>
           </div>
-          <svg
-            style={styles.refreshIcon}
-            viewBox="0 0 20 20"
-            fill="currentColor"
+          <button
+            style={styles.iconButton}
             onClick={() => fetchAllData()}
+            aria-label="Refresh data"
           >
-            <path
-              fillRule="evenodd"
-              d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-              clipRule="evenodd"
-            />
-          </svg>
+            <svg
+              style={styles.refreshIcon}
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
           <button
             style={{
-              ...styles.button,
-              ...styles.secondaryButton,
-              padding: "8px 12px",
-              opacity: filteredData.length > 0 ? 1 : 0.6,
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 16px",
+              borderRadius: "6px",
+              backgroundColor: filteredData.length > 0 ? "#f3f4f6" : "#f9fafb",
+              color: filteredData.length > 0 ? "#1f2937" : "#9ca3af",
+              border: "1px solid #e5e7eb",
               cursor: filteredData.length > 0 ? "pointer" : "not-allowed",
+              fontSize: "14px",
+              fontWeight: "500",
+              transition: "all 0.2s ease",
+              ":hover": {
+                backgroundColor:
+                  filteredData.length > 0 ? "#e5e7eb" : "#f9fafb",
+                borderColor: filteredData.length > 0 ? "#d1d5db" : "#e5e7eb",
+              },
+              ":focus": {
+                outline: "none",
+                boxShadow:
+                  filteredData.length > 0
+                    ? "0 0 0 3px rgba(209, 213, 219, 0.5)"
+                    : "none",
+              },
             }}
-            onClick={() => downloadCSV(filteredData)}
+            onClick={() => filteredData.length > 0 && downloadCSV(filteredData)}
             disabled={filteredData.length === 0}
+            aria-disabled={filteredData.length === 0}
+            aria-label={
+              filteredData.length > 0
+                ? "Export data as CSV"
+                : "No data available to export"
+            }
           >
-            Download
+            <svg
+              style={{
+                width: "16px",
+                height: "16px",
+                color: filteredData.length > 0 ? "#4f46e5" : "#9ca3af",
+              }}
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Download CSV
           </button>
         </div>
       </div>
 
-      <div style={styles.dataCountContainer}>
-        Total Records: {filteredData.length}
+      <div style={styles.statsContainer}>
+        <div style={styles.statCard}>
+          <div style={styles.statValue}>{statusCounts.total || 0}</div>
+          <div style={styles.statLabel}>Total Numbers</div>
+        </div>
+        <div style={{ ...styles.statCard, backgroundColor: "#e6fffa" }}>
+          <div style={{ ...styles.statValue, color: "#38b2ac" }}>
+            {statusCounts.added || 0}
+          </div>
+          <div style={styles.statLabel}>Added</div>
+        </div>
+        <div style={{ ...styles.statCard, backgroundColor: "#ebf4ff" }}>
+          <div style={{ ...styles.statValue, color: "#5a67d8" }}>
+            {statusCounts["previously added"] || 0}
+          </div>
+          <div style={styles.statLabel}>Previously Added</div>
+        </div>
+        <div style={{ ...styles.statCard, backgroundColor: "#fff5f5" }}>
+          <div style={{ ...styles.statValue, color: "#f56565" }}>
+            {statusCounts["not added"] || 0}
+          </div>
+          <div style={styles.statLabel}>Not Added</div>
+        </div>
       </div>
 
       <div style={styles.tableContainer}>
@@ -312,21 +517,25 @@ const BlockWiseGroupFetch = () => {
             <table style={styles.table}>
               <thead style={styles.tableHeader}>
                 <tr>
-                  <th style={styles.th}>Sl. No.</th>
-                  <th style={styles.th}>Mobile no. added</th>
+                  <th style={styles.th}>#</th>
+                  <th style={styles.th}>Mobile Number</th>
                   <th style={styles.th}>District</th>
                   <th style={styles.th}>Block</th>
                   <th style={styles.th}>Status</th>
                   <th style={styles.th}>Group</th>
-                  <th style={styles.th}>Group admin no.</th>
-                  <th style={styles.th}>Reason for not added in group</th>
+                  <th style={styles.th}>Admin Number</th>
+                  <th style={styles.th}>Remarks</th>
                 </tr>
               </thead>
               <tbody style={styles.tableBody}>
                 {filteredData.map((item, index) => (
                   <tr key={index} style={styles.tr}>
                     <td style={styles.td}>{index + 1}</td>
-                    <td style={styles.td}>{item.child_number}</td>
+                    <td style={styles.td}>
+                      <span style={styles.mobileNumber}>
+                        +{item.child_number}
+                      </span>
+                    </td>
                     <td style={styles.td}>{item.district}</td>
                     <td style={styles.td}>{item.block}</td>
                     <td style={styles.td}>
@@ -350,9 +559,30 @@ const BlockWiseGroupFetch = () => {
                         {item.child_status}
                       </span>
                     </td>
-                    <td style={styles.td}>{item.groupname}</td>
-                    <td style={styles.td}>{item.parent_userid}</td>
-                    <td style={styles.td}>{item.child_remark}</td>
+                    <td style={styles.td}>
+                      {item.groupname || <span style={styles.naText}>N/A</span>}
+                    </td>
+                    <td style={styles.td}>
+                      {item.parent_userid ? (
+                        <a
+                          href={`https://wa.me/${extractWhatsAppNumber(
+                            item.parent_userid
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={styles.whatsappLink}
+                        >
+                          {extractWhatsAppNumber(item.parent_userid)}
+                        </a>
+                      ) : (
+                        <span style={styles.naText}>N/A</span>
+                      )}
+                    </td>
+                    <td style={styles.td}>
+                      {item.child_remark || (
+                        <span style={styles.naText}>-</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -360,7 +590,30 @@ const BlockWiseGroupFetch = () => {
           </div>
         ) : (
           <div style={styles.noDataContainer}>
-            <p>No data available</p>
+            <svg
+              style={styles.noDataIcon}
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zm7-1a1 1 0 11-2 0 1 1 0 012 0zm-7.536 5.879a1 1 0 001.415 0 3 3 0 014.242 0 1 1 0 001.415-1.415 5 5 0 00-7.072 0 1 1 0 000 1.415z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <p style={styles.noDataText}>
+              {searchQuery
+                ? "No matching records found"
+                : "No data available for the selected filters"}
+            </p>
+            {searchQuery && (
+              <button
+                style={styles.clearSearchButton}
+                onClick={() => setSearchQuery("")}
+              >
+                Clear search
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -368,10 +621,12 @@ const BlockWiseGroupFetch = () => {
       {showAddModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
-            <h3 style={styles.modalHeader}>Add Mobile Number</h3>
-            <p style={styles.modalSubHeader}>
-              Select district and block to add a number
-            </p>
+            <div style={styles.modalHeaderContainer}>
+              <h3 style={styles.modalHeader}>Add Mobile Number</h3>
+              <p style={styles.modalSubHeader}>
+                Select district and block to add a number
+              </p>
+            </div>
 
             <div style={styles.filtersContainer}>
               <div style={styles.filterItem}>
@@ -454,7 +709,7 @@ const BlockWiseGroupFetch = () => {
 
             <div style={styles.modalActions}>
               <button
-                style={{ ...styles.button, ...styles.secondaryButton }}
+                style={styles.secondaryButton}
                 onClick={() => {
                   setShowAddModal(false);
                   setValidationError("");
@@ -467,7 +722,6 @@ const BlockWiseGroupFetch = () => {
               </button>
               <button
                 style={{
-                  ...styles.button,
                   ...styles.primaryButton,
                   opacity:
                     !validationError &&
@@ -492,7 +746,7 @@ const BlockWiseGroupFetch = () => {
                   !selectedBlock
                 }
               >
-                Save Number
+                Add Number
               </button>
             </div>
           </div>
@@ -508,11 +762,10 @@ const styles = {
   container: {
     padding: "24px",
     fontFamily: "'Inter', sans-serif",
-    maxWidth: "1200px",
+    maxWidth: "1400px",
     margin: "0 auto",
     backgroundColor: "#f9fafb",
-    borderRadius: "12px",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+    minHeight: "100vh",
   },
   headerContainer: {
     display: "flex",
@@ -531,7 +784,10 @@ const styles = {
     justifyContent: "center",
     color: "#4f46e5",
     transition: "background-color 0.2s",
-    marginTop: "30px",
+    marginTop: "8px",
+    "&:hover": {
+      backgroundColor: "#f3f4f6",
+    },
   },
   header: {
     fontSize: "28px",
@@ -547,51 +803,165 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: "16px",
+    marginBottom: "24px",
     flexWrap: "wrap",
     gap: "16px",
   },
   leftControls: {
     display: "flex",
     gap: "16px",
-    alignItems: "right",
+    alignItems: "center",
   },
   rightControls: {
     display: "flex",
-    gap: "16px",
+    gap: "12px",
     alignItems: "center",
+    flexWrap: "wrap",
   },
-  refreshInfo: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
+  searchContainer: {
+    position: "relative",
+    minWidth: "290px",
+  },
+  searchIcon: {
+    position: "absolute",
+    left: "12px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    width: "16px",
+    height: "16px",
+    color: "#9ca3af",
+  },
+  searchInput: {
+    padding: "10px 12px 10px 70px",
+    borderRadius: "8px",
+    border: "1px solid #d1d5db",
+    backgroundColor: "#fff",
+    fontSize: "14px",
+    color: "#111827",
+    transition: "border-color 0.2s",
+    outline: "none",
+    boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+    width: "100%",
+    "&:focus": {
+      borderColor: "#4f46e5",
+      boxShadow: "0 0 0 3px rgba(79, 70, 229, 0.1)",
+    },
+  },
+  statsContainer: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+    gap: "16px",
+    marginBottom: "24px",
+  },
+  statCard: {
+    backgroundColor: "#fff",
+    borderRadius: "8px",
+    padding: "16px",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+    textAlign: "center",
+  },
+  statValue: {
+    fontSize: "24px",
+    fontWeight: "600",
+    color: "#111827",
+    marginBottom: "4px",
+  },
+  statLabel: {
     fontSize: "14px",
     color: "#6b7280",
   },
-  refreshIcon: {
-    width: "16px",
-    height: "16px",
-    color: "#6b7280",
-    cursor: "pointer",
+  filterItem: {
+    display: "flex",
+    flexDirection: "column",
+    minWidth: "160px",
   },
-  dataCountContainer: {
-    backgroundColor: "#f3f4f6",
-    padding: "8px 16px",
-    borderRadius: "6px",
-    marginBottom: "16px",
+  inputLabel: {
+    display: "block",
     fontSize: "14px",
     fontWeight: "500",
     color: "#374151",
+    marginBottom: "8px",
+  },
+  select: {
+    padding: "10px 12px",
+    borderRadius: "8px",
+    border: "1px solid #d1d5db",
+    backgroundColor: "#fff",
+    fontSize: "14px",
+    color: "#111827",
+    transition: "border-color 0.2s",
+    outline: "none",
+    boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+    "&:focus": {
+      borderColor: "#4f46e5",
+      boxShadow: "0 0 0 3px rgba(79, 70, 229, 0.1)",
+    },
+    "&:disabled": {
+      backgroundColor: "#f3f4f6",
+      cursor: "not-allowed",
+    },
+  },
+  button: {
+    padding: "10px 16px",
+    borderRadius: "8px",
+    border: "none",
+    fontWeight: "500",
+    fontSize: "14px",
+    cursor: "pointer",
+    transition: "all 0.2s",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+  },
+  primaryButton: {
+    // backgroundColor: "#4f46e5",
+    color: "#fff",
+    "&:hover": {
+      backgroundColor: "#4338ca",
+    },
+  },
+  secondaryButton: {
+    backgroundColor: "#fff",
+    color: "#374151",
+    border: "1px solid #d1d5db",
+    "&:hover": {
+      backgroundColor: "#f9fafb",
+    },
+  },
+  iconButton: {
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    padding: "8px",
+    borderRadius: "8px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#6b7280",
+    transition: "all 0.2s",
+    "&:hover": {
+      backgroundColor: "#f3f4f6",
+      color: "#4f46e5",
+    },
+  },
+  buttonIcon: {
+    width: "16px",
+    height: "16px",
+  },
+  refreshIcon: {
+    width: "20px",
+    height: "20px",
   },
   tableContainer: {
     backgroundColor: "#fff",
     borderRadius: "8px",
     overflow: "hidden",
     boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+    minHeight: "300px",
   },
   tableWrapper: {
-    maxHeight: "500px",
-    overflowY: "auto",
+    overflowX: "auto",
     position: "relative",
   },
   table: {
@@ -635,6 +1005,21 @@ const styles = {
     fontWeight: "500",
     display: "inline-block",
   },
+  mobileNumber: {
+    fontWeight: "500",
+    color: "#1e40af",
+  },
+  whatsappLink: {
+    color: "#1e40af",
+    textDecoration: "none",
+    "&:hover": {
+      textDecoration: "underline",
+    },
+  },
+  naText: {
+    color: "#9ca3af",
+    fontStyle: "italic",
+  },
   loadingContainer: {
     display: "flex",
     flexDirection: "column",
@@ -654,95 +1039,35 @@ const styles = {
   noDataContainer: {
     padding: "40px",
     textAlign: "center",
+  },
+  noDataIcon: {
+    width: "48px",
+    height: "48px",
+    color: "#9ca3af",
+    marginBottom: "16px",
+  },
+  noDataText: {
     color: "#6b7280",
+    fontSize: "16px",
+    marginBottom: "16px",
+  },
+  clearSearchButton: {
+    padding: "8px 16px",
+    borderRadius: "6px",
+    backgroundColor: "#f3f4f6",
+    border: "none",
+    color: "#374151",
+    cursor: "pointer",
+    fontSize: "14px",
+    "&:hover": {
+      backgroundColor: "#e5e7eb",
+    },
   },
   filtersContainer: {
     display: "flex",
     gap: "20px",
     marginBottom: "24px",
     flexWrap: "wrap",
-  },
-  filterItem: {
-    display: "flex",
-    flexDirection: "column",
-    flex: "1 1 200px",
-  },
-  inputLabel: {
-    display: "block",
-    fontSize: "14px",
-    fontWeight: "500",
-    color: "#374151",
-    marginBottom: "8px",
-  },
-  select: {
-    padding: "12px",
-    borderRadius: "8px",
-    border: "1px solid #d1d5db",
-    backgroundColor: "#fff",
-    fontSize: "14px",
-    color: "#111827",
-    transition: "border-color 0.2s",
-    outline: "none",
-    boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-  },
-  button: {
-    padding: "12px 20px",
-    borderRadius: "8px",
-    border: "none",
-    fontWeight: "600",
-    fontSize: "14px",
-    cursor: "pointer",
-    transition: "all 0.2s",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-  },
-  primaryButton: {
-    backgroundColor: "#4f46e5",
-    color: "#fff",
-    "&:hover": {
-      backgroundColor: "#4338ca",
-    },
-  },
-  secondaryButton: {
-    backgroundColor: "#e5e7eb",
-    color: "#374151",
-    "&:hover": {
-      backgroundColor: "#d1d5db",
-    },
-  },
-  modalOverlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 999,
-    backdropFilter: "blur(2px)",
-  },
-  modal: {
-    backgroundColor: "#fff",
-    padding: "32px",
-    borderRadius: "12px",
-    width: "100%",
-    maxWidth: "400px",
-    boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)",
-  },
-  modalHeader: {
-    fontSize: "20px",
-    fontWeight: "600",
-    color: "#111827",
-    marginBottom: "4px",
-  },
-  modalSubHeader: {
-    fontSize: "14px",
-    color: "#6b7280",
-    marginBottom: "24px",
   },
   inputContainer: {
     marginBottom: "24px",
@@ -753,7 +1078,7 @@ const styles = {
     marginBottom: "4px",
   },
   prefix: {
-    padding: "12px",
+    padding: "10px 12px",
     backgroundColor: "#f3f4f6",
     border: "1px solid #d1d5db",
     borderRight: "none",
@@ -764,7 +1089,7 @@ const styles = {
   },
   input: {
     flex: 1,
-    padding: "12px",
+    padding: "10px 12px",
     border: "1px solid #d1d5db",
     borderTopRightRadius: "8px",
     borderBottomRightRadius: "8px",
@@ -772,6 +1097,14 @@ const styles = {
     fontSize: "14px",
     color: "#111827",
     transition: "border-color 0.2s",
+    "&:focus": {
+      borderColor: "#4f46e5",
+      boxShadow: "0 0 0 3px rgba(79, 70, 229, 0.1)",
+    },
+    "&:disabled": {
+      backgroundColor: "#f3f4f6",
+      cursor: "not-allowed",
+    },
   },
   helperText: {
     fontSize: "12px",
@@ -789,12 +1122,88 @@ const styles = {
   errorIcon: {
     width: "16px",
     height: "16px",
-    color: "#ef4444",
+  },
+  modalOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 50,
+  },
+  modal: {
+    backgroundColor: "#fff",
+    borderRadius: "12px",
+    padding: "24px",
+    width: "100%",
+    maxWidth: "500px",
+    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+    maxHeight: "90vh",
+    overflowY: "auto",
+  },
+  modalHeaderContainer: {
+    marginBottom: "24px",
+  },
+  modalHeader: {
+    fontSize: "20px",
+    fontWeight: "600",
+    color: "#111827",
+    marginBottom: "4px",
+  },
+  modalSubHeader: {
+    fontSize: "14px",
+    color: "#6b7280",
   },
   modalActions: {
     display: "flex",
     justifyContent: "flex-end",
     gap: "12px",
-    marginTop: "16px",
+    marginTop: "24px",
+  },
+  successNotification: {
+    position: "fixed",
+    top: "20px",
+    right: "20px",
+    backgroundColor: "#ecfdf5",
+    color: "#065f46",
+    padding: "12px 16px",
+    borderRadius: "8px",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+    zIndex: 100,
+    animation: "slideIn 0.3s ease-out",
+  },
+  errorNotification: {
+    position: "fixed",
+    top: "20px",
+    right: "20px",
+    backgroundColor: "#fef2f2",
+    color: "#b91c1c",
+    padding: "12px 16px",
+    borderRadius: "8px",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+    zIndex: 100,
+    animation: "slideIn 0.3s ease-out",
+  },
+  notificationIcon: {
+    width: "20px",
+    height: "20px",
+  },
+  "@keyframes spin": {
+    "0%": { transform: "rotate(0deg)" },
+    "100%": { transform: "rotate(360deg)" },
+  },
+  "@keyframes slideIn": {
+    "0%": { transform: "translateY(-100%)", opacity: 0 },
+    "100%": { transform: "translateY(0)", opacity: 1 },
   },
 };

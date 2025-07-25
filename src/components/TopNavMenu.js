@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, Tag, Button, Drawer } from "antd";
+import { Menu, Button, Drawer, Avatar, Badge } from "antd";
 import {
   AppstoreOutlined,
   AuditOutlined,
@@ -14,6 +14,9 @@ import {
   LogoutOutlined,
   MenuOutlined,
   HomeOutlined,
+  BellOutlined,
+  UserOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 
 const TopNavMenu = () => {
@@ -22,13 +25,21 @@ const TopNavMenu = () => {
   const [current, setCurrent] = useState(location.pathname);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     setCurrent(location.pathname);
     const handleResize = () => setIsMobile(window.innerWidth < 768);
+    const handleScroll = () => setScrolled(window.scrollY > 10);
+
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [location.pathname]);
 
   const handleClick = (e) => {
     setCurrent(e.key);
@@ -36,57 +47,79 @@ const TopNavMenu = () => {
     if (isMobile) setDrawerVisible(false);
   };
 
+  // Styles
   const containerStyles = {
     display: "flex",
+    padding: "0 30px",
+    backgroundColor: scrolled ? "rgba(0, 21, 41, 0.95)" : "#001529",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "rgb(0, 21, 41)",
-    padding: "10px 20px",
-    borderBottom: "2px solid #4caf50",
     position: "sticky",
     top: 0,
     zIndex: 1000,
+    height: "79px",
+    boxShadow: scrolled ? "0 4px 12px rgba(0, 0, 0, 0.1)" : "none",
+    transition: "all 0.3s ease",
   };
 
   const logoContainerStyles = {
     display: "flex",
     alignItems: "center",
     cursor: "pointer",
+    gap: "12px",
   };
 
   const logoStyles = {
-    height: "40px",
-    marginRight: "10px",
+    height: "36px",
+    borderRadius: "4px",
   };
 
   const titleStyles = {
     color: "#ffffff",
-    fontSize: "15px",
-    fontWeight: "bold",
+    fontSize: "18px",
+    fontWeight: "600",
     margin: 0,
-    paddingRight: "10px",
+    background: "linear-gradient(90deg, #fff, #4caf50)",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
   };
 
   const menuStyles = {
     flex: 1,
     display: isMobile ? "none" : "flex",
-    justifyContent: "flex-end",
+    justifyContent: "center",
     background: "transparent",
     border: "none",
+    lineHeight: "62px",
   };
 
   const itemStyles = {
-    fontSize: "16px",
+    fontSize: "14px",
     fontWeight: "500",
-    color: "#ffffff",
+    color: "rgba(255, 255, 255, 0.85)",
     transition: "all 0.3s ease",
-    margin: "0 10px",
+    margin: "0 8px",
+    "&:hover": {
+      color: "#fff",
+    },
+  };
+
+  const activeItemStyles = {
+    color: "#fff",
+    fontWeight: "600",
+    borderBottom: "2px solid #4caf50",
   };
 
   const drawerButtonStyles = {
-    backgroundColor: "#4caf50",
-    borderColor: "#4caf50",
-    color: "#ffffff",
+    backgroundColor: "transparent",
+    border: "none",
+    color: "#fff",
+    fontSize: "18px",
+    padding: "0 12px",
+    height: "64px",
+    "&:hover": {
+      backgroundColor: "rgba(255, 255, 255, 0.1)",
+    },
   };
 
   const drawerStyles = {
@@ -95,11 +128,27 @@ const TopNavMenu = () => {
     padding: 0,
   };
 
+  const actionsContainerStyles = {
+    display: "flex",
+    alignItems: "center",
+    gap: "16px",
+    marginLeft: "24px",
+  };
+
+  const actionButtonStyles = {
+    color: "rgba(255, 255, 255, 0.85)",
+    fontSize: "16px",
+    "&:hover": {
+      color: "#fff",
+    },
+  };
+
   const items = [
     {
       label: (
         <span style={itemStyles}>
-          <HomeOutlined /> Home
+          <HomeOutlined style={{ marginRight: "6px" }} />
+          Home
         </span>
       ),
       key: "/",
@@ -107,16 +156,17 @@ const TopNavMenu = () => {
     {
       label: (
         <span style={itemStyles}>
-          <AuditOutlined /> Groups
+          <AuditOutlined style={{ marginRight: "6px" }} />
+          Groups
         </span>
       ),
       key: "/BlockWiseGroupFetch",
     },
-
     {
       label: (
         <span style={itemStyles}>
-          <ContainerOutlined /> Add Numbers
+          <ContainerOutlined style={{ marginRight: "6px" }} />
+          Add Numbers
         </span>
       ),
       key: "/BlockWiseNumberAdd",
@@ -124,7 +174,8 @@ const TopNavMenu = () => {
     {
       label: (
         <span style={itemStyles}>
-          <AppstoreOutlined /> Templates
+          <AppstoreOutlined style={{ marginRight: "6px" }} />
+          Templates
         </span>
       ),
       key: "/CreateTemplate",
@@ -132,7 +183,8 @@ const TopNavMenu = () => {
     {
       label: (
         <span style={itemStyles}>
-          <MailOutlined /> Messages
+          <MailOutlined style={{ marginRight: "6px" }} />
+          Messages
         </span>
       ),
       key: "/SendMessage",
@@ -140,7 +192,8 @@ const TopNavMenu = () => {
     {
       label: (
         <span style={itemStyles}>
-          <FileImageOutlined /> Media Upload
+          <FileImageOutlined style={{ marginRight: "6px" }} />
+          Media
         </span>
       ),
       key: "/MediaUpload",
@@ -149,49 +202,159 @@ const TopNavMenu = () => {
 
   return (
     <div style={containerStyles}>
-      <div style={logoContainerStyles}>
-        {/* <img src={logo} alt="Logo" style={logoStyles} /> */}
-        <h1 style={titleStyles}>
-          Group Management Dashboard
-          <sub>
-            {/* <Tag color={tagColor}>
-              <i>v{Version.version}</i>
-            </Tag> */}
-          </sub>
-        </h1>
+      <div style={logoContainerStyles} onClick={() => navigate("/")}>
+        <Avatar
+          src="https://via.placeholder.com/36"
+          style={logoStyles}
+          shape="square"
+        />
+        <h1 style={titleStyles}>Group Management</h1>
       </div>
 
       {!isMobile ? (
-        <Menu
-          items={items}
-          onClick={handleClick}
-          mode="horizontal"
-          theme="dark"
-          selectedKeys={[current]}
-          style={menuStyles}
-        />
+        <>
+          <Menu
+            items={items.map((item) => ({
+              ...item,
+              label: (
+                <span
+                  style={{
+                    ...itemStyles,
+                    ...(current === item.key ? activeItemStyles : {}),
+                  }}
+                >
+                  {item.label}
+                </span>
+              ),
+            }))}
+            onClick={handleClick}
+            mode="horizontal"
+            theme="dark"
+            selectedKeys={[current]}
+            style={menuStyles}
+          />
+          {/* <div style={actionsContainerStyles}>
+            <Badge count={5} style={{ backgroundColor: "#4caf50" }}>
+              <Button
+                type="text"
+                icon={<BellOutlined />}
+                style={actionButtonStyles}
+              />
+            </Badge>
+            <Button
+              type="text"
+              icon={<SettingOutlined />}
+              style={actionButtonStyles}
+              onClick={() => navigate("/settings")}
+            />
+            <Avatar
+              icon={<UserOutlined />}
+              style={{
+                backgroundColor: "#4caf50",
+                cursor: "pointer",
+              }}
+              onClick={() => navigate("/profile")}
+            />
+          </div> */}
+        </>
       ) : (
         <>
+          <div style={{ flex: 1 }}></div>
           <Button
             icon={<MenuOutlined />}
             style={drawerButtonStyles}
             onClick={() => setDrawerVisible(true)}
           />
           <Drawer
-            title={<span style={{ color: "#fff" }}>Menu</span>}
+            title={
+              <div style={logoContainerStyles}>
+                <Avatar
+                  src="https://via.placeholder.com/36"
+                  style={logoStyles}
+                  shape="square"
+                />
+                <h1 style={{ ...titleStyles, fontSize: "16px" }}>Menu</h1>
+              </div>
+            }
             placement="right"
             onClose={() => setDrawerVisible(false)}
             open={drawerVisible}
             bodyStyle={drawerStyles}
-            headerStyle={{ background: "#001529", color: "#fff" }}
+            headerStyle={{
+              background: "#001529",
+              color: "#fff",
+              padding: "16px 24px",
+              borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+            }}
+            width="280px"
           >
             <Menu
-              items={items}
+              items={items.map((item) => ({
+                ...item,
+                label: (
+                  <span
+                    style={{
+                      ...itemStyles,
+                      ...(current === item.key ? activeItemStyles : {}),
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                ),
+              }))}
               onClick={handleClick}
               mode="vertical"
               theme="dark"
               selectedKeys={[current]}
+              style={{ borderRight: "none", padding: "8px 0" }}
             />
+            <div
+              style={{
+                padding: "16px 24px",
+                borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+                marginTop: "16px",
+              }}
+            >
+              <Button
+                type="text"
+                block
+                icon={<UserOutlined />}
+                style={{
+                  color: "rgba(255, 255, 255, 0.85)",
+                  textAlign: "left",
+                  height: "auto",
+                  padding: "8px 0",
+                }}
+              >
+                My Profile
+              </Button>
+              <Button
+                type="text"
+                block
+                icon={<SettingOutlined />}
+                style={{
+                  color: "rgba(255, 255, 255, 0.85)",
+                  textAlign: "left",
+                  height: "auto",
+                  padding: "8px 0",
+                }}
+              >
+                Settings
+              </Button>
+              <Button
+                type="text"
+                block
+                icon={<LogoutOutlined />}
+                style={{
+                  color: "rgba(255, 255, 255, 0.85)",
+                  textAlign: "left",
+                  height: "auto",
+                  padding: "8px 0",
+                }}
+              >
+                Logout
+              </Button>
+            </div>
           </Drawer>
         </>
       )}

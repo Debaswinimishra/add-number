@@ -1,58 +1,194 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const [hovered, setHovered] = useState("");
 
-  // Main container style
-  const containerStyle = {
-    maxWidth: "1200px",
-    margin: "0 auto",
-    padding: "40px 20px",
-    fontFamily: "'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
-    color: "#2d3748",
-  };
-
-  // Header styles
-  const headerStyle = {
-    textAlign: "center",
-    marginBottom: "60px",
-  };
-
-  const headingStyle = {
-    fontSize: "36px",
-    fontWeight: "600",
-    marginBottom: "16px",
-    color: "#1a365d",
-  };
-
-  const subHeadingStyle = {
-    fontSize: "18px",
-    color: "#4a5568",
-    maxWidth: "700px",
-    margin: "0 auto",
-    lineHeight: "1.6",
-  };
-
-  // Cards container
-  const cardsContainerStyle = {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-    gap: "30px",
-    justifyContent: "center",
-  };
+  const dashboardCards = [
+    {
+      id: "BlockWiseGroupFetch",
+      title: "Group Management",
+      description: "Udisecode groups and manage your contacts efficiently",
+      buttonText: "Manage Groups",
+      buttonColor: "#6366f1",
+      icon: "👥",
+      bgGradient: "linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)",
+    },
+    {
+      id: "BlockWiseNumberAdd",
+      title: "Number Management",
+      description:
+        "Add and edit numbers across your groups & View and organize all your contact groups in one place",
+      buttonText: "Manage Numbers",
+      buttonColor: "#10b981",
+      icon: "📱",
+      bgGradient: "linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)",
+    },
+  ];
 
   return (
-    <div style={containerStyle}>
-      <header style={headerStyle}>
-        <h1 style={headingStyle}>Admin Dashboard</h1>
-        <p style={subHeadingStyle}>
-          Manage your groups and numbers efficiently with our comprehensive
-          dashboard tools. Access all features with just one click.
+    <div style={styles.container}>
+      <header style={styles.header}>
+        <h1 style={styles.heading}>Contact Manager</h1>
+        <p style={styles.subHeading}>
+          Simple tools to organize your contacts efficiently
         </p>
       </header>
+
+      <div style={styles.cardsContainer}>
+        {dashboardCards.map((card) => (
+          <div
+            key={card.id}
+            style={{
+              ...styles.card,
+              ...(hovered === card.id ? styles.cardHover : {}),
+            }}
+            onMouseEnter={() => setHovered(card.id)}
+            onMouseLeave={() => setHovered("")}
+            onClick={() => navigate(`/${card.id}`)}
+          >
+            <div>
+              <div
+                style={{
+                  ...styles.iconContainer,
+                  background: card.bgGradient,
+                }}
+              >
+                {card.icon}
+              </div>
+              <h3 style={styles.cardTitle}>{card.title}</h3>
+              <p style={styles.cardDescription}>{card.description}</p>
+            </div>
+            <button
+              style={{
+                ...styles.button,
+                backgroundColor: card.buttonColor,
+                color: "#ffffff",
+                ...(hovered === card.id ? styles.buttonHover : {}),
+              }}
+            >
+              {card.buttonText}
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <footer style={styles.footer}>
+        © {new Date().getFullYear()} Contact Manager
+      </footer>
     </div>
   );
+};
+
+const styles = {
+  container: {
+    width: "100%",
+    height: "100vh",
+    margin: "0 auto",
+    padding: "1rem",
+    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+    boxSizing: "border-box",
+  },
+  header: {
+    textAlign: "center",
+    marginBottom: "2rem",
+    padding: "0 1rem",
+    maxWidth: "800px",
+  },
+  heading: {
+    fontSize: "clamp(2rem, 5vw, 3rem)",
+    fontWeight: "700",
+    marginBottom: "0.5rem",
+    color: "#111827",
+    lineHeight: "1.2",
+    background: "linear-gradient(90deg, #4f46e5, #10b981)",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+  },
+  subHeading: {
+    fontSize: "clamp(1rem, 2vw, 1.25rem)",
+    color: "#6b7280",
+    lineHeight: "1.5",
+  },
+  cardsContainer: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))",
+    gap: "1.5rem",
+    width: "100%",
+    maxWidth: "800px",
+    padding: "0 1rem",
+    margin: "0 auto 2rem",
+  },
+  card: {
+    background: "#ffffff",
+    borderRadius: "1rem",
+    padding: "1.5rem",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+    border: "1px solid #e5e7eb",
+    textAlign: "center",
+    cursor: "pointer",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    minHeight: "280px",
+  },
+  cardHover: {
+    transform: "translateY(-5px)",
+    boxShadow: "0 8px 20px rgba(0, 0, 0, 0.1)",
+  },
+  cardTitle: {
+    fontSize: "1.25rem",
+    fontWeight: "600",
+    margin: "1rem 0",
+    color: "#111827",
+  },
+  cardDescription: {
+    fontSize: "0.9rem",
+    color: "#4b5563",
+    marginBottom: "1.5rem",
+    lineHeight: "1.5",
+  },
+  iconContainer: {
+    width: "70px",
+    height: "70px",
+    margin: "0 auto",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "1rem",
+    fontSize: "2rem",
+  },
+  button: {
+    padding: "0.75rem 1.25rem",
+    fontSize: "0.9rem",
+    fontWeight: "500",
+    borderRadius: "0.5rem",
+    border: "none",
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+    width: "100%",
+    maxWidth: "200px",
+    margin: "0 auto",
+    boxShadow: "0 2px 5px rgba(0, 0, 0, 0.1)",
+  },
+  buttonHover: {
+    transform: "translateY(-2px)",
+    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.15)",
+  },
+  footer: {
+    textAlign: "center",
+    padding: "1rem 0",
+    color: "#9ca3af",
+    fontSize: "0.875rem",
+    marginTop: "auto",
+  },
 };
 
 export default HomePage;
