@@ -10,7 +10,6 @@ import { useNavigate } from "react-router-dom";
 
 const BlockWiseGroupFetch = () => {
   const navigate = useNavigate();
-  const REACT_APP_BASE_URL = process.env.REACT_APP_BASE_URL;
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedBlock, setSelectedBlock] = useState("");
   const [showSyncModal, setShowSyncModal] = useState(false);
@@ -23,6 +22,7 @@ const BlockWiseGroupFetch = () => {
   const [previewData, setPreviewData] = useState([]);
   const [groupCount, setGroupCount] = useState(0);
   const [fetchingCount, setFetchingCount] = useState(false);
+  const [activeStep, setActiveStep] = useState(1); // 1: Location, 2: Upload, 3: Review
 
   // Fetch group count when district and block are selected
   useEffect(() => {
@@ -58,13 +58,13 @@ const BlockWiseGroupFetch = () => {
   const handlePasswordSubmit = () => {
     if (passwordInput === "ThinkZone@2025") {
       setLoading(true);
-      sync_group
+      sync_group()
         .then((response) => {
           if (!response.ok) throw new Error("API request failed");
           return response.json();
         })
         .then((data) => {
-          alert("Password correct! Sync started.\n" + JSON.stringify(data));
+          alert("Sync started successfully!");
           setShowSyncModal(false);
         })
         .catch((error) => {
@@ -90,10 +90,8 @@ const BlockWiseGroupFetch = () => {
       const sheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(sheet);
 
-      // Extract UDISE codes regardless of column name
       const standardizedData = jsonData
         .map((row) => {
-          // Find the UDISE code by checking common column names
           const udiseCode = Object.entries(row).find(
             ([key]) =>
               key.toLowerCase().includes("udise") ||
@@ -102,11 +100,11 @@ const BlockWiseGroupFetch = () => {
 
           return { udise_code: udiseCode };
         })
-        .filter((item) => item.udise_code); // Filter out empty values
+        .filter((item) => item.udise_code);
 
       setPreviewData(standardizedData);
-      const udiseCodes = standardizedData.map((row) => row.udise_code);
-      setUdiseCodesList(udiseCodes);
+      setUdiseCodesList(standardizedData.map((row) => row.udise_code));
+      if (activeStep === 2) setActiveStep(3);
     };
 
     reader.readAsArrayBuffer(file);
@@ -116,11 +114,8 @@ const BlockWiseGroupFetch = () => {
     if (!excelFile) return alert("Please select an Excel file.");
     if (!selectedDistrict || !selectedBlock)
       return alert("Please select District and Block.");
-
-    if (udiseCodesList.length === 0) {
-      alert("No UDISE codes found in the Excel file.");
-      return;
-    }
+    if (udiseCodesList.length === 0)
+      return alert("No valid UDISE codes found in the file.");
 
     const payload = {
       district: selectedDistrict.toLowerCase(),
@@ -135,8 +130,8 @@ const BlockWiseGroupFetch = () => {
         return res.json();
       })
       .then(() => {
-        alert("UDISE codes submitted successfully.");
-        setExcelFile(null);
+        alert("UDISE codes submitted successfully!");
+        resetForm();
       })
       .catch((err) => {
         alert("Error: " + err.message);
@@ -154,212 +149,292 @@ const BlockWiseGroupFetch = () => {
     setAllBlocks(myBlocks);
   }, [selectedDistrict]);
 
-  const handleGoBack = () => {
-    navigate(-1);
+  const resetForm = () => {
+    setSelectedDistrict("");
+    setSelectedBlock("");
+    setExcelFile(null);
+    setPreviewData([]);
+    setUdiseCodesList([]);
+    setActiveStep(1);
   };
+
+  const handleNextStep = () => {
+    if (activeStep === 1 && (!selectedDistrict || !selectedBlock)) {
+      alert("Please select both District and Block");
+      return;
+    }
+    if (activeStep === 2 && !excelFile) {
+      alert("Please upload an Excel file");
+      return;
+    }
+    setActiveStep(activeStep + 1);
+  };
+
+  const handlePrevStep = () => setActiveStep(activeStep - 1);
 
   return (
     <div className="block-wise-container">
       <div className="header-container">
-        <button
-          onClick={handleGoBack}
-          className="back-button"
-          aria-label="Go back"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
-        </button>
         <div className="title-wrapper">
-          <h1 className="main-title">Block-Wise Group Fetch</h1>
-          <p className="subtitle">
-            Manage and synchronize school groups by block
-          </p>
+          <h1>School Group Manager</h1>
+          <p>Manage school groups by block and district</p>
         </div>
         <div className="header-actions">
           <button className="sync-button" onClick={handleSyncClick}>
             Sync Groups
           </button>
-          <button
-            className="refresh-button"
-            onClick={() => window.location.reload()}
-          >
-            Refresh
-          </button>
+        </div>
+      </div>
+
+      {/* Progress Steps */}
+      <div className="progress-steps">
+        <div className={`step ${activeStep >= 1 ? "active" : ""}`}>
+          <div className="step-number">1</div>
+          <div className="step-title">Select Location</div>
+        </div>
+        <div className={`step ${activeStep >= 2 ? "active" : ""}`}>
+          <div className="step-number">2</div>
+          <div className="step-title">Upload File</div>
+        </div>
+        <div className={`step ${activeStep >= 3 ? "active" : ""}`}>
+          <div className="step-number">3</div>
+          <div className="step-title">Review & Submit</div>
         </div>
       </div>
 
       <div className="content-card">
-        {/* <div className="group-count-display">
-          {selectedDistrict && selectedBlock && (
-            <div className="count-badge">
-              {fetchingCount ? (
-                "Loading group count..."
-              ) : (
-                <>
-                  Groups in {selectedBlock}: <strong>{groupCount}</strong>
-                </>
-              )}
-            </div>
-          )}
-        </div> */}
+        {/* Step 1: Location Selection */}
+        {activeStep === 1 && (
+          <div className="step-content">
+            <h2>Select School Location</h2>
+            <p>Choose the district and block to manage school groups</p>
 
-        <div className="filters-container">
-          <div className="filter-group">
-            <label className="filter-label">District</label>
-            <select
-              className="filter-select"
-              value={selectedDistrict}
-              onChange={(e) => {
-                setSelectedDistrict(e.target.value);
-                setSelectedBlock("");
-                setUdiseCodesList([]);
-              }}
-            >
-              <option value="">Select District</option>
-              {uniqueDistricts.map((district, id) => (
-                <option key={id} value={district}>
-                  {district}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="filter-group">
-            <label className="filter-label">Block</label>
-            <select
-              className="filter-select"
-              value={selectedBlock}
-              onChange={(e) => setSelectedBlock(e.target.value)}
-              disabled={!selectedDistrict}
-            >
-              <option value="">Select Block</option>
-              {allBlocks.map((block, id) => (
-                <option key={id} value={block.block}>
-                  {block.block}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="file-upload-section">
-          <div className="file-input-wrapper">
-            <input
-              type="file"
-              accept=".xls,.xlsx"
-              onChange={(e) => {
-                setExcelFile(e.target.files[0]);
-                handleExcelUpload(e.target.files[0]);
-              }}
-              id="file-upload"
-              className="file-input"
-            />
-            <label htmlFor="file-upload" className="file-input-label">
-              Choose Excel File
-            </label>
-            <span className="file-name">
-              {excelFile ? excelFile.name : "No file selected"}
-            </span>
-          </div>
-          <button
-            className="submit-button"
-            onClick={handleExcelSubmit}
-            disabled={
-              !excelFile || !selectedDistrict || !selectedBlock || loading
-            }
-          >
-            {loading ? "Uploading..." : "Submit Excel"}
-          </button>
-        </div>
-
-        {previewData.length > 0 && (
-          <div className="preview-section">
-            <div className="preview-header">
-              <h3>UDISE Codes Preview ({previewData.length} schools)</h3>
-            </div>
-            <div className="table-container">
-              <table className="preview-table">
-                <thead>
-                  <tr>
-                    <th>UDISE Code</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {previewData.map((row, idx) => (
-                    <tr key={idx}>
-                      <td>{row.udise_code}</td>
-                    </tr>
+            <div className="filters-container">
+              <div className="filter-group">
+                <label>District</label>
+                <select
+                  value={selectedDistrict}
+                  onChange={(e) => {
+                    setSelectedDistrict(e.target.value);
+                    setSelectedBlock("");
+                  }}
+                >
+                  <option value="">Select District</option>
+                  {uniqueDistricts.map((district, id) => (
+                    <option key={id} value={district}>
+                      {district}
+                    </option>
                   ))}
-                </tbody>
-              </table>
+                </select>
+              </div>
+
+              <div className="filter-group">
+                <label>Block</label>
+                <select
+                  value={selectedBlock}
+                  onChange={(e) => setSelectedBlock(e.target.value)}
+                  disabled={!selectedDistrict}
+                >
+                  <option value="">Select Block</option>
+                  {allBlocks.map((block, id) => (
+                    <option key={id} value={block.block}>
+                      {block.block}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {selectedDistrict && selectedBlock && (
+              <div className="info-box">
+                <div>
+                  <p>
+                    <strong>Selected Location:</strong> {selectedBlock},{" "}
+                    {selectedDistrict}
+                  </p>
+                  <p>
+                    <strong>Total Groups:</strong>{" "}
+                    {fetchingCount ? "Loading..." : groupCount}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 2: File Upload */}
+        {activeStep === 2 && (
+          <div className="step-content">
+            <h2>Upload School Data</h2>
+            <p>Upload an Excel file containing UDISE codes of schools</p>
+
+            <div className="file-upload-section">
+              <div className="file-input-wrapper">
+                <input
+                  type="file"
+                  accept=".xls,.xlsx"
+                  onChange={(e) => {
+                    setExcelFile(e.target.files[0]);
+                    handleExcelUpload(e.target.files[0]);
+                  }}
+                  id="file-upload"
+                />
+                <label htmlFor="file-upload" className="file-input-label">
+                  Choose Excel File
+                </label>
+                <span className="file-name">
+                  {excelFile ? excelFile.name : "No file selected"}
+                </span>
+              </div>
+
+              <div className="file-requirements">
+                <h4>File Requirements:</h4>
+                <ul>
+                  <li>Excel format (.xls or .xlsx)</li>
+                  <li>Should contain UDISE codes in any column</li>
+                  <li>Maximum file size: 5MB</li>
+                </ul>
+              </div>
             </div>
           </div>
         )}
+
+        {/* Step 3: Review & Submit */}
+        {activeStep === 3 && (
+          <div className="step-content">
+            <h2>Review & Submit</h2>
+            <p>Verify the UDISE codes before submission</p>
+
+            {previewData.length > 0 ? (
+              <div className="preview-section">
+                <div className="preview-header">
+                  <h3>
+                    Found {previewData.length} schools in {selectedBlock},{" "}
+                    {selectedDistrict}
+                  </h3>
+                </div>
+                <div className="table-container">
+                  <table className="preview-table">
+                    <thead>
+                      <tr>
+                        <th>UDISE Code</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {previewData.slice(0, 5).map((row, idx) => (
+                        <tr key={idx}>
+                          <td>{row.udise_code}</td>
+                        </tr>
+                      ))}
+                      {previewData.length > 5 && (
+                        <tr>
+                          <td className="more-items">
+                            + {previewData.length - 5} more schools
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div className="no-data-message">
+                No UDISE codes found in the file. Please check your file and try
+                again.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Navigation Buttons */}
+        <div className="step-navigation">
+          {activeStep > 1 && (
+            <button
+              className="nav-button prev-button"
+              onClick={handlePrevStep}
+              disabled={loading}
+            >
+              Previous
+            </button>
+          )}
+
+          {activeStep < 3 ? (
+            <button
+              className="nav-button next-button"
+              onClick={handleNextStep}
+              disabled={
+                (activeStep === 1 && (!selectedDistrict || !selectedBlock)) ||
+                (activeStep === 2 && !excelFile) ||
+                loading
+              }
+            >
+              Next
+            </button>
+          ) : (
+            <button
+              className="nav-button submit-button"
+              onClick={handleExcelSubmit}
+              disabled={loading || previewData.length === 0}
+            >
+              {loading ? "Submitting..." : "Submit Data"}
+            </button>
+          )}
+        </div>
       </div>
 
+      {/* Sync Modal */}
       {showSyncModal && (
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h3>Enter Password</h3>
+              <h3>Sync School Groups</h3>
               <button
                 className="modal-close"
                 onClick={() => setShowSyncModal(false)}
               >
-                &times;
+                ×
               </button>
             </div>
             <div className="modal-body">
+              <p>
+                Enter admin password to synchronize all school groups with the
+                latest data.
+              </p>
               <input
                 type="password"
-                className="password-input"
                 placeholder="Enter password"
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && handlePasswordSubmit()}
               />
-              {passwordError && (
-                <p className="error-message">{passwordError}</p>
-              )}
+              {passwordError && <p className="error">{passwordError}</p>}
             </div>
             <div className="modal-footer">
               <button
-                className="modal-button secondary"
                 onClick={() => setShowSyncModal(false)}
                 disabled={loading}
               >
                 Cancel
               </button>
               <button
-                className="modal-button primary"
                 onClick={handlePasswordSubmit}
                 disabled={loading}
+                className="primary"
               >
-                {loading ? "Processing..." : "Submit"}
+                {loading ? "Syncing..." : "Confirm Sync"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      <style>{`
+      <style jsx>{`
         .block-wise-container {
-          font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-          padding: 20px;
-          max-width: 1200px;
+          font-family: "Inter", sans-serif;
+          max-width: 1000px;
           margin: 0 auto;
+          padding: 20px;
+          color: #333;
         }
 
         .header-container {
@@ -367,40 +442,37 @@ const BlockWiseGroupFetch = () => {
           justify-content: space-between;
           align-items: center;
           margin-bottom: 30px;
-          position: relative;
+          gap: 20px;
         }
 
         .back-button {
-          position: absolute;
-          left: 0;
           background: none;
           border: none;
-          font-size: 16px;
           color: #4f46e5;
+          font-weight: 500;
           cursor: pointer;
           padding: 8px 12px;
-          border-radius: 4px;
+          border-radius: 6px;
         }
 
         .back-button:hover {
-          background-color: #f1f5f9;
+          background: #f3f4f6;
         }
 
         .title-wrapper {
-          text-align: center;
-          flex-grow: 1;
+          flex: 1;
         }
 
-        .main-title {
-          font-size: 24px;
-          color: #1e293b;
+        h1 {
           margin: 0;
+          font-size: 24px;
+          color: #111827;
         }
 
-        .subtitle {
+        p {
+          margin: 5px 0 0;
+          color: #6b7280;
           font-size: 14px;
-          color: #64748b;
-          margin-top: 5px;
         }
 
         .header-actions {
@@ -408,156 +480,210 @@ const BlockWiseGroupFetch = () => {
           gap: 10px;
         }
 
-        .sync-button, .refresh-button {
+        .sync-button {
+          background: #4f46e5;
+          color: white;
+          border: none;
           padding: 8px 16px;
           border-radius: 6px;
           font-weight: 500;
           cursor: pointer;
-          border: 1px solid #e2e8f0;
-        }
-
-        .sync-button {
-          background-color: #4f46e5;
-          color: white;
-          border: none;
         }
 
         .sync-button:hover {
-          background-color: #4338ca;
+          background: #4338ca;
         }
 
-        .refresh-button {
-          background-color: white;
-          color: #4f46e5;
+        /* Progress Steps */
+        .progress-steps {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 30px;
+          position: relative;
         }
 
-        .refresh-button:hover {
-          background-color: #f8fafc;
+        .progress-steps::before {
+          content: "";
+          position: absolute;
+          top: 15px;
+          left: 0;
+          right: 0;
+          height: 2px;
+          background: #e5e7eb;
+          z-index: 0;
         }
 
-        .content-card {
-          background: white;
-          border-radius: 8px;
-          padding: 20px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        .step {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          position: relative;
+          z-index: 1;
         }
 
-        .group-count-display {
-          margin-bottom: 20px;
+        .step-number {
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          background: #e5e7eb;
+          color: #6b7280;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 600;
+          margin-bottom: 8px;
         }
-        
-        .count-badge {
-          display: inline-block;
-          padding: 8px 16px;
-          background-color: #e0f2fe;
-          color: #0369a1;
-          border-radius: 20px;
+
+        .step.active .step-number {
+          background: #4f46e5;
+          color: white;
+        }
+
+        .step-title {
           font-size: 14px;
+          color: #9ca3af;
           font-weight: 500;
         }
 
+        .step.active .step-title {
+          color: #4f46e5;
+        }
+
+        /* Content Card */
+        .content-card {
+          background: white;
+          border-radius: 12px;
+          padding: 30px;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+          border: 1px solid #e5e7eb;
+        }
+
+        .step-content {
+          margin-bottom: 30px;
+        }
+
+        h2 {
+          margin: 0 0 10px;
+          font-size: 20px;
+          color: #111827;
+        }
+
+        /* Filters */
         .filters-container {
           display: flex;
           gap: 20px;
-          margin-bottom: 20px;
+          margin: 20px 0;
         }
 
         .filter-group {
           flex: 1;
         }
 
-        .filter-label {
+        label {
           display: block;
           margin-bottom: 8px;
           font-size: 14px;
-          color: #64748b;
+          font-weight: 500;
         }
 
-        .filter-select {
+        select {
           width: 100%;
           padding: 10px;
           border-radius: 6px;
-          border: 1px solid #e2e8f0;
+          border: 1px solid #d1d5db;
           font-size: 14px;
         }
 
+        select:focus {
+          outline: none;
+          border-color: #4f46e5;
+          box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        /* Info Box */
+        .info-box {
+          background: #f9fafb;
+          border-radius: 8px;
+          padding: 16px;
+          margin-top: 20px;
+          border-left: 4px solid #4f46e5;
+        }
+
+        .info-box p {
+          margin: 5px 0;
+          color: #4b5563;
+        }
+
+        .info-box p strong {
+          color: #111827;
+        }
+
+        /* File Upload */
         .file-upload-section {
-          display: flex;
-          gap: 15px;
-          align-items: center;
-          margin-bottom: 20px;
+          margin: 20px 0;
         }
 
         .file-input-wrapper {
-          flex: 1;
           display: flex;
           align-items: center;
           gap: 10px;
+          margin-bottom: 15px;
         }
 
-        .file-input {
+        #file-upload {
           display: none;
         }
 
         .file-input-label {
-          padding: 10px 15px;
-          background-color: #f1f5f9;
+          padding: 10px 16px;
+          background: #f9fafb;
+          border: 1px dashed #d1d5db;
           border-radius: 6px;
           cursor: pointer;
           font-size: 14px;
-          white-space: nowrap;
         }
 
         .file-input-label:hover {
-          background-color: #e2e8f0;
+          background: #f3f4f6;
         }
 
         .file-name {
           font-size: 14px;
-          color: #64748b;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+          color: #6b7280;
         }
 
-        .submit-button {
-          padding: 10px 20px;
-          background-color: #4f46e5;
-          color: white;
-          border: none;
+        .file-requirements {
+          background: #f9fafb;
           border-radius: 6px;
-          cursor: pointer;
+          padding: 15px;
           font-size: 14px;
         }
 
-        .submit-button:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
+        .file-requirements h4 {
+          margin: 0 0 10px;
+          font-size: 14px;
         }
 
-        .submit-button:hover:not(:disabled) {
-          background-color: #4338ca;
+        .file-requirements ul {
+          margin: 0;
+          padding-left: 20px;
         }
 
+        /* Preview Section */
         .preview-section {
-          margin-top: 30px;
-        }
-
-        .preview-header {
-          margin-bottom: 15px;
+          margin: 20px 0;
         }
 
         .preview-header h3 {
+          margin: 0 0 15px;
           font-size: 16px;
-          color: #1e293b;
-          margin: 0;
         }
 
         .table-container {
-          border: 1px solid #e2e8f0;
+          border: 1px solid #e5e7eb;
           border-radius: 6px;
           overflow: hidden;
-          max-height: 400px;
+          max-height: 300px;
           overflow-y: auto;
         }
 
@@ -568,50 +694,101 @@ const BlockWiseGroupFetch = () => {
         }
 
         .preview-table th {
-          background-color: #f8fafc;
+          background: #f3f4f6;
           padding: 12px;
           text-align: left;
           font-weight: 500;
-          color: #475569;
           position: sticky;
           top: 0;
         }
 
         .preview-table td {
           padding: 12px;
-          border-top: 1px solid #f1f5f9;
-          color: #475569;
+          border-top: 1px solid #f3f4f6;
         }
 
-        .preview-table tr:hover td {
-          background-color: #f9fafb;
+        .more-items {
+          color: #9ca3af;
+          font-style: italic;
         }
 
-        /* Modal styles */
+        .no-data-message {
+          background: #fef2f2;
+          color: #b91c1c;
+          padding: 15px;
+          border-radius: 6px;
+          margin: 20px 0;
+        }
+
+        /* Navigation Buttons */
+        .step-navigation {
+          display: flex;
+          justify-content: space-between;
+          padding-top: 20px;
+          border-top: 1px solid #e5e7eb;
+        }
+
+        .nav-button {
+          padding: 10px 20px;
+          border-radius: 6px;
+          font-weight: 500;
+          cursor: pointer;
+          font-size: 14px;
+        }
+
+        .prev-button {
+          background: white;
+          border: 1px solid #d1d5db;
+          color: #4b5563;
+        }
+
+        .prev-button:hover {
+          background: #f9fafb;
+        }
+
+        .next-button,
+        .submit-button {
+          background: #4f46e5;
+          color: white;
+          border: none;
+          margin-left: auto;
+        }
+
+        .next-button:hover:not(:disabled),
+        .submit-button:hover:not(:disabled) {
+          background: #4338ca;
+        }
+
+        .nav-button:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+
+        /* Modal */
         .modal-overlay {
           position: fixed;
           top: 0;
           left: 0;
           right: 0;
           bottom: 0;
-          background-color: rgba(0,0,0,0.5);
+          background: rgba(0, 0, 0, 0.5);
           display: flex;
-          justify-content: center;
           align-items: center;
+          justify-content: center;
           z-index: 1000;
         }
 
         .modal {
-          background-color: white;
+          background: white;
           border-radius: 8px;
           width: 100%;
           max-width: 400px;
-          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
 
         .modal-header {
           padding: 16px;
-          border-bottom: 1px solid #f1f5f9;
+          border-bottom: 1px solid #e5e7eb;
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -625,63 +802,84 @@ const BlockWiseGroupFetch = () => {
         .modal-close {
           background: none;
           border: none;
-          font-size: 20px;
+          font-size: 24px;
           cursor: pointer;
-          color: #94a3b8;
+          color: #9ca3af;
         }
 
         .modal-body {
           padding: 16px;
         }
 
-        .password-input {
+        .modal-body p {
+          margin: 0 0 15px;
+        }
+
+        .modal-body input {
           width: 100%;
           padding: 10px;
           border-radius: 6px;
-          border: 1px solid #e2e8f0;
+          border: 1px solid #d1d5db;
           font-size: 14px;
-          margin-bottom: 10px;
         }
 
-        .error-message {
+        .error {
           color: #dc2626;
           font-size: 13px;
-          margin-top: 5px;
+          margin: 8px 0 0;
         }
 
         .modal-footer {
           padding: 16px;
-          border-top: 1px solid #f1f5f9;
+          border-top: 1px solid #e5e7eb;
           display: flex;
           justify-content: flex-end;
           gap: 10px;
         }
 
-        .modal-button {
+        .modal-footer button {
           padding: 8px 16px;
           border-radius: 6px;
           font-size: 14px;
           cursor: pointer;
+          border: 1px solid #d1d5db;
+          background: white;
         }
 
-        .modal-button.primary {
-          background-color: #4f46e5;
+        .modal-footer button.primary {
+          background: #4f46e5;
           color: white;
           border: none;
         }
 
-        .modal-button.primary:hover {
-          background-color: #4338ca;
+        .modal-footer button.primary:hover {
+          background: #4338ca;
         }
 
-        .modal-button.secondary {
-          background-color: white;
-          color: #64748b;
-          border: 1px solid #e2e8f0;
-        }
+        /* Responsive */
+        @media (max-width: 768px) {
+          .header-container {
+            flex-direction: column;
+            align-items: flex-start;
+          }
 
-        .modal-button.secondary:hover {
-          background-color: #f8fafc;
+          .filters-container {
+            flex-direction: column;
+          }
+
+          .progress-steps {
+            flex-wrap: wrap;
+            gap: 15px;
+          }
+
+          .step {
+            flex: 1;
+            min-width: 100px;
+          }
+
+          .content-card {
+            padding: 20px;
+          }
         }
       `}</style>
     </div>
