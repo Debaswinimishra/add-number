@@ -299,18 +299,11 @@ const BlockWiseGroupFetch = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {previewData.slice(0, 5).map((row, idx) => (
+                      {previewData.map((row, idx) => (
                         <tr key={idx}>
                           <td>{row.udise_code}</td>
                         </tr>
                       ))}
-                      {previewData.length > 5 && (
-                        <tr>
-                          <td className="more-items">
-                            + {previewData.length - 5} more udise
-                          </td>
-                        </tr>
-                      )}
                     </tbody>
                   </table>
                 </div>
