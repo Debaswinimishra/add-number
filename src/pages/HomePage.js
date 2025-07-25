@@ -122,6 +122,15 @@ const HomePage = () => {
       buttonColor: "#48bb78",
       icon: "➕",
     },
+    {
+      id: "sendMessages",
+      title: "Send Messages",
+      description:
+        "Send messages to entire groups with personalized templates and scheduling.",
+      buttonText: "Send",
+      buttonColor: "#9f7aea",
+      icon: "✉️",
+    },
   ];
 
   return (
@@ -149,7 +158,9 @@ const HomePage = () => {
                 `/${
                   card.id === "groupFetch"
                     ? "BlockWiseGroupFetch"
-                    : "BlockWiseNumberAdd"
+                    : card.id === "addNumbers"
+                    ? "BlockWiseNumberAdd"
+                    : "SendGroupMessages" // New route for messages
                 }`
               )
             }
