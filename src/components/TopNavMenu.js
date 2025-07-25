@@ -127,7 +127,7 @@ const TopNavMenu = () => {
           <AppstoreOutlined /> Templates
         </span>
       ),
-      key: "/messagetemplate",
+      key: "/CreateTemplate",
     },
     {
       label: (
@@ -135,7 +135,7 @@ const TopNavMenu = () => {
           <MailOutlined /> Messages
         </span>
       ),
-      key: "/messages",
+      key: "/SendMessage",
     },
     {
       label: (
@@ -143,7 +143,7 @@ const TopNavMenu = () => {
           <FileImageOutlined /> Media Upload
         </span>
       ),
-      key: "/mediaUpload",
+      key: "/MediaUpload",
     },
   ];
 

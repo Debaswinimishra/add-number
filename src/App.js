@@ -10,6 +10,9 @@ import TopNavMenu from "./components/TopNavMenu";
 import HomePage from "./pages/HomePage";
 import BlockWiseGroupFetch from "./pages/BlockWiseGroupFetch";
 import BlockWiseNumberAdd from "./pages/BlockWiseNumberAdd";
+import CreateTemplate from "./pages/CreateTemplate";
+import MediaUpload from "./pages/MediaUpload";
+import SendMessage from "./pages/SendMessage";
 
 const App = () => {
   return (
@@ -23,6 +26,9 @@ const App = () => {
             element={<BlockWiseGroupFetch />}
           />
           <Route path="/BlockWiseNumberAdd" element={<BlockWiseNumberAdd />} />
+          <Route path="/CreateTemplate" element={<CreateTemplate />} />
+          <Route path="/MediaUpload" element={<MediaUpload />} />
+          <Route path="/SendMessage" element={<SendMessage />} />
           <Route path="/" element={<Navigate to="/HomePage" replace />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
