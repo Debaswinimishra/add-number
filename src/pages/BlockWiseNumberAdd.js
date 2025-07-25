@@ -7,16 +7,25 @@ const BlockWiseGroupFetch = () => {
   const navigate = useNavigate();
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedBlock, setSelectedBlock] = useState("");
+  const [filterDistrict, setFilterDistrict] = useState("");
+  const [filterBlock, setFilterBlock] = useState("");
   const [allBlocks, setAllBlocks] = useState([]);
+  const [filterBlocks, setFilterBlocks] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [numberInput, setNumberInput] = useState("");
   const [validationError, setValidationError] = useState("");
   const [tableData, setTableData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const fetchAllData = () => {
     setIsLoading(true);
-    get_status()
+    const params = {
+      district: filterDistrict.toLowerCase(),
+      block: filterBlock.toLowerCase(),
+    };
+
+    get_status(params)
       .then((res) => {
         console.log("response----------->", res);
         if (res?.data?.data) {
@@ -33,12 +42,12 @@ const BlockWiseGroupFetch = () => {
 
   useEffect(() => {
     fetchAllData();
-    const intervalId = setInterval(fetchAllData, 30000);
+    // const intervalId = setInterval(fetchAllData, 30000);
 
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, []);
+    // return () => {
+    //   clearInterval(intervalId);
+    // };
+  }, [filterDistrict, filterBlock]);
 
   useEffect(() => {
     const blocks = districtJson.filter(
@@ -47,6 +56,14 @@ const BlockWiseGroupFetch = () => {
     setAllBlocks(blocks);
     setSelectedBlock("");
   }, [selectedDistrict]);
+
+  useEffect(() => {
+    const blocks = districtJson.filter(
+      (item) => item.district === filterDistrict
+    );
+    setFilterBlocks(blocks);
+    setFilterBlock("");
+  }, [filterDistrict]);
 
   const validateNumber = (number) => {
     if (!number) return "Mobile number is required";
@@ -83,6 +100,7 @@ const BlockWiseGroupFetch = () => {
       setNumberInput("");
       setValidationError("");
       setShowAddModal(false);
+      fetchAllData(); // Refresh data after adding
     } catch (error) {
       console.error("Error adding number:", error);
       alert("❌ An error occurred while adding the number.");
@@ -98,8 +116,26 @@ const BlockWiseGroupFetch = () => {
   };
 
   const handleGoBack = () => {
-    navigate(-1); // Go back to previous page
+    navigate(-1);
   };
+
+  // const handleResetFilters = () => {
+  //   setFilterDistrict("");
+  //   setFilterBlock("");
+  //   setStatusFilter("all");
+  // };
+
+  const filteredData = tableData.filter((item) => {
+    const statusMatch =
+      statusFilter === "all" || item.child_status === statusFilter;
+    const districtMatch =
+      !filterDistrict ||
+      item.district.toLowerCase() === filterDistrict.toLowerCase();
+    const blockMatch =
+      !filterBlock || item.block.toLowerCase() === filterBlock.toLowerCase();
+
+    return statusMatch && districtMatch && blockMatch;
+  });
 
   return (
     <div style={styles.container}>
@@ -144,17 +180,67 @@ const BlockWiseGroupFetch = () => {
           </button>
         </div>
         <div style={styles.rightControls}>
+          <div style={styles.filterItem}>
+            <select
+              value={filterDistrict}
+              onChange={(e) => setFilterDistrict(e.target.value)}
+              style={styles.select}
+              aria-label="Filter by district"
+            >
+              <option value="">All Districts</option>
+              {[...new Set(districtJson.map((item) => item.district))].map(
+                (d, i) => (
+                  <option key={`district-${i}`} value={d}>
+                    {d}
+                  </option>
+                )
+              )}
+            </select>
+          </div>
+          <div style={styles.filterItem}>
+            <select
+              value={filterBlock}
+              onChange={(e) => setFilterBlock(e.target.value)}
+              style={styles.select}
+              disabled={!filterDistrict}
+              aria-label="Filter by block"
+            >
+              <option value="">All Blocks</option>
+              {filterBlocks.map((b, i) => (
+                <option key={`block-${i}`} value={b.block}>
+                  {b.block}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div style={styles.filterItem}>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={styles.select}
+              aria-label="Filter by status"
+            >
+              <option value="all">All Status</option>
+              <option value="added">Added</option>
+              <option value="previously added">Previously Added</option>
+              <option value="not added">Not Added</option>
+            </select>
+          </div>
+          {/* <button
+            style={{
+              ...styles.button,
+              ...styles.secondaryButton,
+              padding: "8px 12px",
+            }}
+            onClick={handleResetFilters}
+          >
+            Reset
+          </button> */}
           <svg
             style={styles.refreshIcon}
             viewBox="0 0 20 20"
             fill="currentColor"
-            onClick={() => {
-              if (
-                window.confirm("Are you sure you want to refresh the page?")
-              ) {
-                window.location.reload();
-              }
-            }}
+            onClick={() => fetchAllData()}
           >
             <path
               fillRule="evenodd"
@@ -165,34 +251,34 @@ const BlockWiseGroupFetch = () => {
         </div>
       </div>
 
-      {/* Data Count */}
       <div style={styles.dataCountContainer}>
-        Total Records: {tableData.length}
+        Total Records: {filteredData.length}
       </div>
 
-      {/* Data Table */}
       <div style={styles.tableContainer}>
         {isLoading ? (
           <div style={styles.loadingContainer}>
             <div style={styles.spinner}></div>
             <p>Loading data...</p>
           </div>
-        ) : tableData.length > 0 ? (
+        ) : filteredData.length > 0 ? (
           <div style={styles.tableWrapper}>
             <table style={styles.table}>
               <thead style={styles.tableHeader}>
                 <tr>
-                  <th style={styles.th}>Mobile</th>
+                  <th style={styles.th}>Sl. No.</th>
+                  <th style={styles.th}>Mobile no. added</th>
                   <th style={styles.th}>District</th>
                   <th style={styles.th}>Block</th>
                   <th style={styles.th}>Status</th>
                   <th style={styles.th}>Group</th>
-                  <th style={styles.th}>Added On</th>
+                  <th style={styles.th}>Reason for not added in group</th>
                 </tr>
               </thead>
               <tbody style={styles.tableBody}>
-                {tableData.map((item, index) => (
+                {filteredData.map((item, index) => (
                   <tr key={index} style={styles.tr}>
+                    <td style={styles.td}>{index + 1}</td>
                     <td style={styles.td}>{item.child_number}</td>
                     <td style={styles.td}>{item.district}</td>
                     <td style={styles.td}>{item.block}</td>
@@ -203,18 +289,22 @@ const BlockWiseGroupFetch = () => {
                           backgroundColor:
                             item.child_status === "added"
                               ? "#d1fae5"
+                              : item.child_status === "previously added"
+                              ? "#e0e7ff"
                               : "#fee2e2",
                           color:
                             item.child_status === "added"
                               ? "#065f46"
+                              : item.child_status === "previously added"
+                              ? "#3730a3"
                               : "#b91c1c",
                         }}
                       >
                         {item.child_status}
                       </span>
                     </td>
-                    <td style={styles.td}>{item.child_remark}</td>
                     <td style={styles.td}>{item.groupname}</td>
+                    <td style={styles.td}>{item.child_remark}</td>
                   </tr>
                 ))}
               </tbody>
@@ -227,7 +317,6 @@ const BlockWiseGroupFetch = () => {
         )}
       </div>
 
-      {/* Modal */}
       {showAddModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>

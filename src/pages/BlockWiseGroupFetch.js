@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import districtJson from "../components/DistrictData.json";
-import { find_group, sync_group } from "../services/AppService";
+import {
+  find_group,
+  sync_group,
+  get_groups_by_udise,
+} from "../services/AppService";
 import { useNavigate } from "react-router-dom";
 
 const BlockWiseGroupFetch = () => {
@@ -17,6 +21,33 @@ const BlockWiseGroupFetch = () => {
   const [allBlocks, setAllBlocks] = useState([]);
   const [udiseCodesList, setUdiseCodesList] = useState([]);
   const [previewData, setPreviewData] = useState([]);
+  const [groupCount, setGroupCount] = useState(0);
+  const [fetchingCount, setFetchingCount] = useState(false);
+
+  // Fetch group count when district and block are selected
+  useEffect(() => {
+    const fetchGroupCount = async () => {
+      if (selectedDistrict && selectedBlock) {
+        setFetchingCount(true);
+        try {
+          const response = await get_groups_by_udise({
+            district: selectedDistrict.toLowerCase(),
+            block: selectedBlock.toLowerCase(),
+          });
+          setGroupCount(response?.data?.count || 0);
+        } catch (error) {
+          console.error("Error fetching group count:", error);
+          setGroupCount(0);
+        } finally {
+          setFetchingCount(false);
+        }
+      } else {
+        setGroupCount(0);
+      }
+    };
+
+    fetchGroupCount();
+  }, [selectedDistrict, selectedBlock]);
 
   const handleSyncClick = () => {
     setShowSyncModal(true);
@@ -124,7 +155,7 @@ const BlockWiseGroupFetch = () => {
   }, [selectedDistrict]);
 
   const handleGoBack = () => {
-    navigate(-1); // Go back to previous page
+    navigate(-1);
   };
 
   return (
@@ -132,7 +163,7 @@ const BlockWiseGroupFetch = () => {
       <div className="header-container">
         <button
           onClick={handleGoBack}
-          // style={styles.backButton}
+          className="back-button"
           aria-label="Go back"
         >
           <svg
@@ -170,6 +201,20 @@ const BlockWiseGroupFetch = () => {
       </div>
 
       <div className="content-card">
+        {/* <div className="group-count-display">
+          {selectedDistrict && selectedBlock && (
+            <div className="count-badge">
+              {fetchingCount ? (
+                "Loading group count..."
+              ) : (
+                <>
+                  Groups in {selectedBlock}: <strong>{groupCount}</strong>
+                </>
+              )}
+            </div>
+          )}
+        </div> */}
+
         <div className="filters-container">
           <div className="filter-group">
             <label className="filter-label">District</label>
@@ -395,6 +440,20 @@ const BlockWiseGroupFetch = () => {
           border-radius: 8px;
           padding: 20px;
           box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .group-count-display {
+          margin-bottom: 20px;
+        }
+        
+        .count-badge {
+          display: inline-block;
+          padding: 8px 16px;
+          background-color: #e0f2fe;
+          color: #0369a1;
+          border-radius: 20px;
+          font-size: 14px;
+          font-weight: 500;
         }
 
         .filters-container {
