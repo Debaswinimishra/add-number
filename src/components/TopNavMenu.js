@@ -202,12 +202,7 @@ const TopNavMenu = () => {
 
   return (
     <div style={containerStyles}>
-      <div style={logoContainerStyles} onClick={() => navigate("/")}>
-        <Avatar
-          src="https://via.placeholder.com/36"
-          style={logoStyles}
-          shape="square"
-        />
+      <div style={logoContainerStyles}>
         <h1 style={titleStyles}>Group Management</h1>
       </div>
 
