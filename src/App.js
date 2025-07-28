@@ -13,6 +13,7 @@ import BlockWiseNumberAdd from "./pages/BlockWiseNumberAdd";
 import CreateTemplate from "./pages/CreateTemplate";
 import MediaUpload from "./pages/MediaUpload";
 import SendMessage from "./pages/SendMessage";
+import UnMatchedGroups from "./pages/UnMatchedGroups";
 
 const App = () => {
   return (
@@ -26,6 +27,7 @@ const App = () => {
             element={<BlockWiseGroupFetch />}
           />
           <Route path="/BlockWiseNumberAdd" element={<BlockWiseNumberAdd />} />
+          <Route path="/UnMatchedGroups" element={<UnMatchedGroups />} />
           <Route path="/CreateTemplate" element={<CreateTemplate />} />
           <Route path="/MediaUpload" element={<MediaUpload />} />
           <Route path="/SendMessage" element={<SendMessage />} />

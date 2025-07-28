@@ -21,6 +21,11 @@ export const add_number_to_group = async (body) => {
 export const get_status = async (data) =>
   await Api.get(`getnumberadditionstatus/${data.district}/${data.block}`);
 
+// ---------------------- UnMatched Groups -----------------------
+
+export const get_unmatched_groups = async () =>
+  await Api.get(`getnoudisegroups`);
+
 // ----------------------------- Template API ---------------------------
 export const getAllMessageTemplates = async () => {
   try {
