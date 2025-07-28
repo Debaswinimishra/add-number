@@ -21,6 +21,116 @@ export const add_number_to_group = async (body) => {
 export const get_status = async (data) =>
   await Api.get(`getnumberadditionstatus/${data.district}/${data.block}`);
 
+// ----------------------------- Template API ---------------------------
+export const getAllMessageTemplates = async () => {
+  try {
+    const response = await axios.get(
+      "https://thinkzone.org/osepa/getAllMessageTemplates"
+    );
+
+    if (response.data.status === "success") {
+      return response.data.data;
+    } else {
+      console.error(
+        "Failed to fetch message templates: ",
+        response.data.message
+      );
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching message templates:", error);
+    return null;
+  }
+};
+
+export const createMessageTemplate = async ({
+  id,
+  name,
+  type,
+  text,
+  mediaurl,
+}) => {
+  try {
+    const response = await axios.post(
+      "https://thinkzone.org/osepa/createMessageTemplate",
+      {
+        id,
+        name,
+        type,
+        text,
+        mediaurl,
+      }
+    );
+
+    if (response.data.status === "success") {
+      return true;
+    } else {
+      console.error(
+        "Failed to create message template: ",
+        response.data.message
+      );
+      return false;
+    }
+  } catch (error) {
+    console.error("Error creating message template:", error);
+    return false;
+  }
+};
+
+export const updateMessageTemplate = async ({
+  _id,
+  name,
+  type,
+  text,
+  mediaurl,
+}) => {
+  try {
+    const response = await axios.put(
+      "https://thinkzone.org/osepa/updateMessageTemplate/" + _id,
+      {
+        name,
+        type,
+        text,
+        mediaurl,
+      }
+    );
+    if (response.data.status === "success") {
+      return true;
+    } else {
+      console.error(
+        "Failed to update message template: ",
+        response.data.message
+      );
+      return false;
+    }
+  } catch (error) {
+    console.error("Error updating message template:", error);
+    return false;
+  }
+};
+
+export const deleteMessageTemplate = async ({ _id }) => {
+  try {
+    const response = await axios.delete(
+      "https://thinkzone.org/osepa/deleteMessageTemplate/" + _id
+    );
+
+    if (response.data.status === "success") {
+      return true;
+    } else {
+      console.error(
+        "Failed to delete message template: ",
+        response.data.message
+      );
+      return false;
+    }
+  } catch (error) {
+    console.error("Error deleting message template:", error);
+    return false;
+  }
+};
+// --------------------------------------------------------------------------------
+
 //------------------------Media Upload------------------------
 export const getAllMedias = async (headerType) => {
   try {
