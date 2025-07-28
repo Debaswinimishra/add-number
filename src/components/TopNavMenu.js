@@ -1,23 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, Button, Drawer, Avatar, Badge } from "antd";
+import { Menu, Button, Drawer } from "antd";
 import {
   AppstoreOutlined,
   AuditOutlined,
-  BookOutlined,
-  BarChartOutlined,
   ContainerOutlined,
-  FileOutlined,
   FileImageOutlined,
   MailOutlined,
-  WhatsAppOutlined,
   LogoutOutlined,
   MenuOutlined,
   HomeOutlined,
-  BellOutlined,
-  UserOutlined,
-  SettingOutlined,
 } from "@ant-design/icons";
+import logo from "../assets/tzicon.png";
 
 const TopNavMenu = () => {
   const navigate = useNavigate();
@@ -25,21 +19,13 @@ const TopNavMenu = () => {
   const [current, setCurrent] = useState(location.pathname);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [drawerVisible, setDrawerVisible] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     setCurrent(location.pathname);
     const handleResize = () => setIsMobile(window.innerWidth < 768);
-    const handleScroll = () => setScrolled(window.scrollY > 10);
-
     window.addEventListener("resize", handleResize);
-    window.addEventListener("scroll", handleScroll);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, [location.pathname]);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [location]);
 
   const handleClick = (e) => {
     setCurrent(e.key);
@@ -47,39 +33,34 @@ const TopNavMenu = () => {
     if (isMobile) setDrawerVisible(false);
   };
 
-  // Styles
   const containerStyles = {
     display: "flex",
-    padding: "0 30px",
-    backgroundColor: scrolled ? "rgba(0, 21, 41, 0.95)" : "#001529",
     alignItems: "center",
     justifyContent: "space-between",
+    backgroundColor: "rgb(0, 21, 41)",
+    padding: "10px 20px",
+    borderBottom: "2px solid #4caf50",
     position: "sticky",
     top: 0,
     zIndex: 1000,
-    height: "79px",
-    boxShadow: scrolled ? "0 4px 12px rgba(0, 0, 0, 0.1)" : "none",
-    transition: "all 0.3s ease",
   };
 
   const logoContainerStyles = {
     display: "flex",
     alignItems: "center",
     cursor: "pointer",
-    gap: "12px",
   };
 
   const logoStyles = {
-    height: "36px",
-    borderRadius: "4px",
+    height: "40px",
+    marginRight: "10px",
   };
 
   const titleStyles = {
-    color: "#ffffff",
     fontSize: "18px",
     fontWeight: "600",
     margin: 0,
-    background: "linear-gradient(90deg, #fff, #4caf50)",
+    background: "linear-gradient(90deg, #ffffff, #4caf50)",
     WebkitBackgroundClip: "text",
     WebkitTextFillColor: "transparent",
   };
@@ -87,39 +68,23 @@ const TopNavMenu = () => {
   const menuStyles = {
     flex: 1,
     display: isMobile ? "none" : "flex",
-    justifyContent: "center",
+    justifyContent: "flex-end",
     background: "transparent",
     border: "none",
-    lineHeight: "62px",
   };
 
   const itemStyles = {
-    fontSize: "14px",
+    fontSize: "16px",
     fontWeight: "500",
-    color: "rgba(255, 255, 255, 0.85)",
+    color: "#ffffff",
     transition: "all 0.3s ease",
-    margin: "0 8px",
-    "&:hover": {
-      color: "#fff",
-    },
-  };
-
-  const activeItemStyles = {
-    color: "#fff",
-    fontWeight: "600",
-    borderBottom: "2px solid #4caf50",
+    margin: "0 10px",
   };
 
   const drawerButtonStyles = {
-    backgroundColor: "transparent",
-    border: "none",
-    color: "#fff",
-    fontSize: "18px",
-    padding: "0 12px",
-    height: "64px",
-    "&:hover": {
-      backgroundColor: "rgba(255, 255, 255, 0.1)",
-    },
+    backgroundColor: "#4caf50",
+    borderColor: "#4caf50",
+    color: "#ffffff",
   };
 
   const drawerStyles = {
@@ -128,27 +93,11 @@ const TopNavMenu = () => {
     padding: 0,
   };
 
-  const actionsContainerStyles = {
-    display: "flex",
-    alignItems: "center",
-    gap: "16px",
-    marginLeft: "24px",
-  };
-
-  const actionButtonStyles = {
-    color: "rgba(255, 255, 255, 0.85)",
-    fontSize: "16px",
-    "&:hover": {
-      color: "#fff",
-    },
-  };
-
   const items = [
     {
       label: (
         <span style={itemStyles}>
-          <HomeOutlined style={{ marginRight: "6px" }} />
-          Home
+          <HomeOutlined /> Home
         </span>
       ),
       key: "/",
@@ -156,8 +105,7 @@ const TopNavMenu = () => {
     {
       label: (
         <span style={itemStyles}>
-          <AuditOutlined style={{ marginRight: "6px" }} />
-          Groups
+          <AuditOutlined /> Groups
         </span>
       ),
       key: "/BlockWiseGroupFetch",
@@ -165,8 +113,7 @@ const TopNavMenu = () => {
     {
       label: (
         <span style={itemStyles}>
-          <ContainerOutlined style={{ marginRight: "6px" }} />
-          Add Numbers
+          <ContainerOutlined /> Add Numbers
         </span>
       ),
       key: "/BlockWiseNumberAdd",
@@ -174,8 +121,7 @@ const TopNavMenu = () => {
     {
       label: (
         <span style={itemStyles}>
-          <AppstoreOutlined style={{ marginRight: "6px" }} />
-          Templates
+          <AppstoreOutlined /> Templates
         </span>
       ),
       key: "/CreateTemplate",
@@ -183,8 +129,7 @@ const TopNavMenu = () => {
     {
       label: (
         <span style={itemStyles}>
-          <MailOutlined style={{ marginRight: "6px" }} />
-          Messages
+          <MailOutlined /> Messages
         </span>
       ),
       key: "/SendMessage",
@@ -192,164 +137,59 @@ const TopNavMenu = () => {
     {
       label: (
         <span style={itemStyles}>
-          <FileImageOutlined style={{ marginRight: "6px" }} />
-          Media
+          <FileImageOutlined /> Media
         </span>
       ),
       key: "/MediaUpload",
+    },
+    {
+      label: (
+        <span style={itemStyles}>
+          <LogoutOutlined /> Logout
+        </span>
+      ),
+      key: "/logout",
     },
   ];
 
   return (
     <div style={containerStyles}>
-      <div style={logoContainerStyles}>
-        <h1 style={titleStyles}>Group Management</h1>
+      <div style={logoContainerStyles} onClick={() => navigate("/")}>
+        <img src={logo} alt="Logo" style={logoStyles} />
+        <h1 style={titleStyles}>TZ - Group Management</h1>
       </div>
 
       {!isMobile ? (
-        <>
-          <Menu
-            items={items.map((item) => ({
-              ...item,
-              label: (
-                <span
-                  style={{
-                    ...itemStyles,
-                    ...(current === item.key ? activeItemStyles : {}),
-                  }}
-                >
-                  {item.label}
-                </span>
-              ),
-            }))}
-            onClick={handleClick}
-            mode="horizontal"
-            theme="dark"
-            selectedKeys={[current]}
-            style={menuStyles}
-          />
-          {/* <div style={actionsContainerStyles}>
-            <Badge count={5} style={{ backgroundColor: "#4caf50" }}>
-              <Button
-                type="text"
-                icon={<BellOutlined />}
-                style={actionButtonStyles}
-              />
-            </Badge>
-            <Button
-              type="text"
-              icon={<SettingOutlined />}
-              style={actionButtonStyles}
-              onClick={() => navigate("/settings")}
-            />
-            <Avatar
-              icon={<UserOutlined />}
-              style={{
-                backgroundColor: "#4caf50",
-                cursor: "pointer",
-              }}
-              onClick={() => navigate("/profile")}
-            />
-          </div> */}
-        </>
+        <Menu
+          items={items}
+          onClick={handleClick}
+          mode="horizontal"
+          theme="dark"
+          selectedKeys={[current]}
+          style={menuStyles}
+        />
       ) : (
         <>
-          <div style={{ flex: 1 }}></div>
           <Button
             icon={<MenuOutlined />}
             style={drawerButtonStyles}
             onClick={() => setDrawerVisible(true)}
           />
           <Drawer
-            title={
-              <div style={logoContainerStyles}>
-                <Avatar
-                  src="https://via.placeholder.com/36"
-                  style={logoStyles}
-                  shape="square"
-                />
-                <h1 style={{ ...titleStyles, fontSize: "16px" }}>Menu</h1>
-              </div>
-            }
+            title={<span style={{ color: "#fff" }}>Menu</span>}
             placement="right"
             onClose={() => setDrawerVisible(false)}
             open={drawerVisible}
             bodyStyle={drawerStyles}
-            headerStyle={{
-              background: "#001529",
-              color: "#fff",
-              padding: "16px 24px",
-              borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-            }}
-            width="280px"
+            headerStyle={{ background: "#001529", color: "#fff" }}
           >
             <Menu
-              items={items.map((item) => ({
-                ...item,
-                label: (
-                  <span
-                    style={{
-                      ...itemStyles,
-                      ...(current === item.key ? activeItemStyles : {}),
-                    }}
-                  >
-                    {item.label}
-                  </span>
-                ),
-              }))}
+              items={items}
               onClick={handleClick}
               mode="vertical"
               theme="dark"
               selectedKeys={[current]}
-              style={{ borderRight: "none", padding: "8px 0" }}
             />
-            <div
-              style={{
-                padding: "16px 24px",
-                borderTop: "1px solid rgba(255, 255, 255, 0.1)",
-                marginTop: "16px",
-              }}
-            >
-              <Button
-                type="text"
-                block
-                icon={<UserOutlined />}
-                style={{
-                  color: "rgba(255, 255, 255, 0.85)",
-                  textAlign: "left",
-                  height: "auto",
-                  padding: "8px 0",
-                }}
-              >
-                My Profile
-              </Button>
-              <Button
-                type="text"
-                block
-                icon={<SettingOutlined />}
-                style={{
-                  color: "rgba(255, 255, 255, 0.85)",
-                  textAlign: "left",
-                  height: "auto",
-                  padding: "8px 0",
-                }}
-              >
-                Settings
-              </Button>
-              <Button
-                type="text"
-                block
-                icon={<LogoutOutlined />}
-                style={{
-                  color: "rgba(255, 255, 255, 0.85)",
-                  textAlign: "left",
-                  height: "auto",
-                  padding: "8px 0",
-                }}
-              >
-                Logout
-              </Button>
-            </div>
           </Drawer>
         </>
       )}

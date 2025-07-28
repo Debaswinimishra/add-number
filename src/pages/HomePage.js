@@ -36,43 +36,7 @@ const HomePage = () => {
         </p>
       </header>
 
-      {/* <div style={styles.cardsContainer}>
-        {dashboardCards.map((card) => (
-          <div
-            key={card.id}
-            style={{
-              ...styles.card,
-              ...(hovered === card.id ? styles.cardHover : {}),
-            }}
-            onMouseEnter={() => setHovered(card.id)}
-            onMouseLeave={() => setHovered("")}
-            onClick={() => navigate(`/${card.id}`)}
-          >
-            <div>
-              <div
-                style={{
-                  ...styles.iconContainer,
-                  background: card.bgGradient,
-                }}
-              >
-                {card.icon}
-              </div>
-              <h3 style={styles.cardTitle}>{card.title}</h3>
-              <p style={styles.cardDescription}>{card.description}</p>
-            </div>
-            <button
-              style={{
-                ...styles.button,
-                backgroundColor: card.buttonColor,
-                color: "#ffffff",
-                ...(hovered === card.id ? styles.buttonHover : {}),
-              }}
-            >
-              {card.buttonText}
-            </button>
-          </div>
-        ))}
-      </div> */}
+     
 
       <footer style={styles.footer}>
         © {new Date().getFullYear()} Contact Admin
