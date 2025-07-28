@@ -20,6 +20,7 @@ const BlockWiseGroupFetch = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [isAddingNumber, setIsAddingNumber] = useState(false);
 
   const fetchAllData = () => {
     setIsLoading(true);
@@ -81,6 +82,10 @@ const BlockWiseGroupFetch = () => {
       return;
     }
 
+    setIsAddingNumber(true); // Start loading
+    setSuccessMessage(""); // Clear previous messages
+    setErrorMessage(""); // Clear previous messages
+
     try {
       const payload = {
         district: selectedDistrict.toLowerCase(),
@@ -94,20 +99,21 @@ const BlockWiseGroupFetch = () => {
         setSuccessMessage(
           `✅ +91${numberInput} added successfully to ${selectedDistrict} / ${selectedBlock}`
         );
-        setTimeout(() => setSuccessMessage(""), 5000);
+        setTimeout(() => {
+          setSuccessMessage("");
+          setShowAddModal(false); // Close modal after success
+        }, 5000);
       } else {
         setErrorMessage(`Failed to add number. ${res?.message || ""}`);
         setTimeout(() => setErrorMessage(""), 5000);
       }
-
-      setNumberInput("");
-      setValidationError("");
-      setShowAddModal(false);
-      fetchAllData();
     } catch (error) {
       console.error("Error adding number:", error);
       setErrorMessage("An error occurred while adding the number.");
       setTimeout(() => setErrorMessage(""), 5000);
+    } finally {
+      setIsAddingNumber(false); // End loading
+      fetchAllData(); // Refresh the data
     }
   };
 
@@ -369,7 +375,7 @@ const BlockWiseGroupFetch = () => {
               {[...new Set(districtJson.map((item) => item.district))].map(
                 (d, i) => (
                   <option key={`district-${i}`} value={d}>
-                    {d}
+                    {d.toUpperCase()}
                   </option>
                 )
               )}
@@ -386,7 +392,7 @@ const BlockWiseGroupFetch = () => {
               <option value="">All Blocks</option>
               {filterBlocks.map((b, i) => (
                 <option key={`block-${i}`} value={b.block}>
-                  {b.block}
+                  {b.block.toUpperCase()}
                 </option>
               ))}
             </select>
@@ -499,8 +505,8 @@ const BlockWiseGroupFetch = () => {
                         +{item.child_number}
                       </span>
                     </td>
-                    <td style={styles.td}>{item.district}</td>
-                    <td style={styles.td}>{item.block}</td>
+                    <td style={styles.td}>{item.district?.toUpperCase()}</td>
+                    <td style={styles.td}>{item.block?.toUpperCase()}</td>
                     <td style={styles.td}>
                       <span
                         style={{
@@ -604,7 +610,7 @@ const BlockWiseGroupFetch = () => {
                   {[...new Set(districtJson.map((item) => item.district))].map(
                     (d, i) => (
                       <option key={i} value={d}>
-                        {d}
+                        {d.toUpperCase()}
                       </option>
                     )
                   )}
@@ -623,7 +629,7 @@ const BlockWiseGroupFetch = () => {
                   <option value="">Select Block</option>
                   {allBlocks.map((b, i) => (
                     <option key={i} value={b.block}>
-                      {b.block}
+                      {b.block.toUpperCase()}
                     </option>
                   ))}
                 </select>
@@ -700,16 +706,25 @@ const BlockWiseGroupFetch = () => {
                     selectedBlock
                       ? "pointer"
                       : "not-allowed",
+                  position: "relative", // For loading spinner
                 }}
                 onClick={handleAddNumber}
                 disabled={
                   !!validationError ||
                   !numberInput ||
                   !selectedDistrict ||
-                  !selectedBlock
+                  !selectedBlock ||
+                  isAddingNumber // Disable during loading
                 }
               >
-                Add Number
+                {isAddingNumber ? (
+                  <>
+                    <div style={styles.buttonSpinner}></div>
+                    Processing...
+                  </>
+                ) : (
+                  "Add Number"
+                )}
               </button>
             </div>
           </div>
@@ -878,7 +893,7 @@ const styles = {
     gap: "8px",
   },
   primaryButton: {
-    // backgroundColor: "#4f46e5",
+    backgroundColor: "#4f46e5", // Add this line
     color: "#fff",
     "&:hover": {
       backgroundColor: "#4338ca",
@@ -1141,6 +1156,17 @@ const styles = {
     boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
     zIndex: 100,
     animation: "slideIn 0.3s ease-out",
+  },
+  buttonSpinner: {
+    border: "2px solid rgba(255,255,255,0.3)",
+    borderTop: "2px solid white",
+    borderRadius: "50%",
+    width: "16px",
+    height: "16px",
+    animation: "spin 1s linear infinite",
+    marginRight: "8px",
+    display: "inline-block",
+    verticalAlign: "middle",
   },
   errorNotification: {
     position: "fixed",

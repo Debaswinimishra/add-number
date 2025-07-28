@@ -126,15 +126,19 @@ const BlockWiseGroupFetch = () => {
     setLoading(true);
     find_group(payload)
       .then((res) => {
-        if (!res.ok) throw new Error("Upload failed");
-        return res.json();
+        if (res.status >= 200 && res.status < 300) {
+          return res.json();
+        } else {
+          throw new Error(`Server responded with status ${res.status}`);
+        }
       })
-      .then(() => {
+      .then((data) => {
         alert("UDISE codes submitted successfully!");
         resetForm();
       })
       .catch((err) => {
-        alert("Error: " + err.message);
+        console.error("Upload error:", err);
+        alert("Error: " + (err.message || "Failed to submit UDISE codes"));
       })
       .finally(() => setLoading(false));
   };
@@ -220,7 +224,7 @@ const BlockWiseGroupFetch = () => {
                   <option value="">Select District</option>
                   {uniqueDistricts.map((district, id) => (
                     <option key={id} value={district}>
-                      {district}
+                      {district.toUpperCase()}
                     </option>
                   ))}
                 </select>
@@ -236,7 +240,7 @@ const BlockWiseGroupFetch = () => {
                   <option value="">Select Block</option>
                   {allBlocks.map((block, id) => (
                     <option key={id} value={block.block}>
-                      {block.block}
+                      {block.block.toUpperCase()}
                     </option>
                   ))}
                 </select>
