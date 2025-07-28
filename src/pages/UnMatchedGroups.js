@@ -169,8 +169,14 @@ const UnMatchedGroups = () => {
   useEffect(() => {
     const fetchUnmatchedGroups = async () => {
       try {
+        setLoading(true);
+        setError(null);
         const response = await get_unmatched_groups();
-        setGroups(response.data);
+        console.log("API Response:", response); // Log the response for debugging
+        
+        // Ensure we always set an array, even if response.data is null/undefined
+        const data = Array.isArray(response?.data) ? response.data : [];
+        setGroups(data);
       } catch (err) {
         setError(err.message || "Failed to fetch unmatched groups");
         console.error("API Error:", err);
@@ -182,21 +188,23 @@ const UnMatchedGroups = () => {
     fetchUnmatchedGroups();
   }, []);
 
-  // Pagination logic
+  // Pagination logic with array checks
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = groups.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(groups.length / itemsPerPage);
+  const currentItems = Array.isArray(groups) ? groups.slice(indexOfFirstItem, indexOfLastItem) : [];
+  const totalPages = Math.ceil(Array.isArray(groups) ? groups.length / itemsPerPage : 0);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Export to Excel function
+  // Export to Excel function with array check
   const exportToExcel = () => {
+    if (!Array.isArray(groups)) return;
+
     // Prepare data with SL No.
     const dataWithSerial = groups.map((group, index) => ({
       "SL No.": index + 1,
       ID: group.id,
-      Name: group.name,
+      Name: group.name || "N/A", // Provide default if name is missing
     }));
 
     // Create worksheet
@@ -242,14 +250,14 @@ const UnMatchedGroups = () => {
           <button
             onClick={exportToExcel}
             style={styles.exportButton}
-            disabled={groups.length === 0}
+            disabled={!Array.isArray(groups) || groups.length === 0}
           >
             <span>Export to Excel</span>
           </button>
         </div>
       </div>
 
-      {groups.length === 0 ? (
+      {!Array.isArray(groups) || groups.length === 0 ? (
         <p style={styles.noDataMessage}>No unmatched groups found</p>
       ) : (
         <>
@@ -264,65 +272,67 @@ const UnMatchedGroups = () => {
               </thead>
               <tbody>
                 {currentItems.map((group, index) => (
-                  <tr key={group.id} style={styles.tableRow}>
+                  <tr key={group.id || index} style={styles.tableRow}>
                     <td style={styles.tableCell}>
                       {indexOfFirstItem + index + 1}
                     </td>
-                    <td style={styles.tableCell}>{group.id}</td>
-                    <td style={styles.tableCell}>{group.name}</td>
+                    <td style={styles.tableCell}>{group.id || "N/A"}</td>
+                    <td style={styles.tableCell}>{group.name || "N/A"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          <div style={styles.pagination}>
-            <button
-              onClick={() => paginate(currentPage - 1)}
-              disabled={currentPage === 1}
-              style={styles.pageButton}
-            >
-              &laquo; Previous
-            </button>
+          {totalPages > 1 && (
+            <div style={styles.pagination}>
+              <button
+                onClick={() => paginate(currentPage - 1)}
+                disabled={currentPage === 1}
+                style={styles.pageButton}
+              >
+                &laquo; Previous
+              </button>
 
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              let pageNum;
-              if (totalPages <= 5) {
-                pageNum = i + 1;
-              } else if (currentPage <= 3) {
-                pageNum = i + 1;
-              } else if (currentPage >= totalPages - 2) {
-                pageNum = totalPages - 4 + i;
-              } else {
-                pageNum = currentPage - 2 + i;
-              }
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
 
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => paginate(pageNum)}
-                  style={{
-                    ...styles.pageButton,
-                    ...(currentPage === pageNum ? styles.activePage : {}),
-                  }}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => paginate(pageNum)}
+                    style={{
+                      ...styles.pageButton,
+                      ...(currentPage === pageNum ? styles.activePage : {}),
+                    }}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
 
-            <span style={styles.pageInfo}>
-              Page {currentPage} of {totalPages}
-            </span>
+              <span style={styles.pageInfo}>
+                Page {currentPage} of {totalPages}
+              </span>
 
-            <button
-              onClick={() => paginate(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              style={styles.pageButton}
-            >
-              Next &raquo;
-            </button>
-          </div>
+              <button
+                onClick={() => paginate(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                style={styles.pageButton}
+              >
+                Next &raquo;
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>
