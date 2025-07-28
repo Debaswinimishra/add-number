@@ -172,10 +172,11 @@ const UnMatchedGroups = () => {
         setLoading(true);
         setError(null);
         const response = await get_unmatched_groups();
-        console.log("API Response:", response); // Log the response for debugging
-        
-        // Ensure we always set an array, even if response.data is null/undefined
-        const data = Array.isArray(response?.data) ? response.data : [];
+        console.log("API Response:", response); 
+
+        const data = Array.isArray(response?.data?.data)
+          ? response.data.data
+          : [];
         setGroups(data);
       } catch (err) {
         setError(err.message || "Failed to fetch unmatched groups");
@@ -191,8 +192,12 @@ const UnMatchedGroups = () => {
   // Pagination logic with array checks
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = Array.isArray(groups) ? groups.slice(indexOfFirstItem, indexOfLastItem) : [];
-  const totalPages = Math.ceil(Array.isArray(groups) ? groups.length / itemsPerPage : 0);
+  const currentItems = Array.isArray(groups)
+    ? groups.slice(indexOfFirstItem, indexOfLastItem)
+    : [];
+  const totalPages = Math.ceil(
+    Array.isArray(groups) ? groups.length / itemsPerPage : 0
+  );
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
