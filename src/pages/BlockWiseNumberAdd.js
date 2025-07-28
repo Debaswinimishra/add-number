@@ -398,7 +398,10 @@ const BlockWiseGroupFetch = () => {
               style={styles.select}
               aria-label="Filter by status"
             >
-              <option value="all">All Status</option>
+              <option value="all">
+                All Status (
+                {Object.values(statusCounts).reduce((a, b) => a + b, 0)})
+              </option>
               <option value="added">Added ({statusCounts.added || 0})</option>
               <option value="previously added">
                 Previously Added ({statusCounts["previously added"] || 0})
