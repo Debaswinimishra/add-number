@@ -82,9 +82,9 @@ const BlockWiseGroupFetch = () => {
       return;
     }
 
-    setIsAddingNumber(true); // Start loading
-    setSuccessMessage(""); // Clear previous messages
-    setErrorMessage(""); // Clear previous messages
+    setIsAddingNumber(true);
+    setSuccessMessage("");
+    setErrorMessage("");
 
     try {
       const payload = {
@@ -99,21 +99,21 @@ const BlockWiseGroupFetch = () => {
         setSuccessMessage(
           `✅ +91${numberInput} added successfully to ${selectedDistrict} / ${selectedBlock}`
         );
+        setNumberInput("");
+        setSelectedDistrict("");
+        setSelectedBlock("");
         setTimeout(() => {
-          setSuccessMessage("");
-          setShowAddModal(false); // Close modal after success
-        }, 5000);
+          setShowAddModal(false);
+        }, 2000);
       } else {
         setErrorMessage(`Failed to add number. ${res?.message || ""}`);
-        setTimeout(() => setErrorMessage(""), 5000);
       }
     } catch (error) {
       console.error("Error adding number:", error);
       setErrorMessage("An error occurred while adding the number.");
-      setTimeout(() => setErrorMessage(""), 5000);
     } finally {
-      setIsAddingNumber(false); // End loading
-      fetchAllData(); // Refresh the data
+      setIsAddingNumber(false);
+      fetchAllData();
     }
   };
 
@@ -123,10 +123,6 @@ const BlockWiseGroupFetch = () => {
       setNumberInput(value);
       setValidationError(validateNumber(value));
     }
-  };
-
-  const handleGoBack = () => {
-    navigate(-1);
   };
 
   const extractWhatsAppNumber = (id) => {
@@ -700,7 +696,11 @@ const BlockWiseGroupFetch = () => {
                     selectedBlock
                       ? "pointer"
                       : "not-allowed",
-                  position: "relative", // For loading spinner
+                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
                 }}
                 onClick={handleAddNumber}
                 disabled={
@@ -708,13 +708,13 @@ const BlockWiseGroupFetch = () => {
                   !numberInput ||
                   !selectedDistrict ||
                   !selectedBlock ||
-                  isAddingNumber // Disable during loading
+                  isAddingNumber
                 }
               >
                 {isAddingNumber ? (
                   <>
                     <div style={styles.buttonSpinner}></div>
-                    Processing...
+                    Adding...
                   </>
                 ) : (
                   "Add Number"
@@ -1150,6 +1150,7 @@ const styles = {
     boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
     zIndex: 100,
     animation: "slideIn 0.3s ease-out",
+    border: "1px solid #a7f3d0",
   },
   buttonSpinner: {
     border: "2px solid rgba(255,255,255,0.3)",
@@ -1158,9 +1159,7 @@ const styles = {
     width: "16px",
     height: "16px",
     animation: "spin 1s linear infinite",
-    marginRight: "8px",
     display: "inline-block",
-    verticalAlign: "middle",
   },
   errorNotification: {
     position: "fixed",
