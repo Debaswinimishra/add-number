@@ -203,14 +203,11 @@ const BlockWiseGroupFetch = () => {
     return statusMatch && districtMatch && blockMatch && searchMatch;
   });
 
-  const statusCounts = tableData.reduce(
-    (acc, item) => {
-      acc[item.child_status] = (acc[item.child_status] || 0) + 1;
-      acc.total++;
-      return acc;
-    },
-    { total: 0 }
-  );
+  const statusCounts = tableData.reduce((acc, item) => {
+    acc[item.child_status] = (acc[item.child_status] || 0) + 1;
+    // acc.total++;
+    return acc;
+  }, {});
 
   return (
     <div style={styles.container}>
@@ -404,10 +401,7 @@ const BlockWiseGroupFetch = () => {
               style={styles.select}
               aria-label="Filter by status"
             >
-              <option value="all">
-                All Status (
-                {Object.values(statusCounts).reduce((a, b) => a + b, 0)})
-              </option>
+              <option value="all">All Status ({tableData.length})</option>
               <option value="added">Added ({statusCounts.added || 0})</option>
               <option value="previously added">
                 Previously Added ({statusCounts["previously added"] || 0})

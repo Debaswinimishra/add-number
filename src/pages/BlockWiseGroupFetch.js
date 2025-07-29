@@ -135,6 +135,7 @@ const BlockWiseGroupFetch = () => {
       .then((data) => {
         alert("UDISE codes submitted successfully!");
         resetForm();
+        setActiveStep(1);
       })
       .catch((err) => {
         console.error("Upload error:", err);
