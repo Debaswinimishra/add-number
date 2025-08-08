@@ -21,8 +21,11 @@ const BlockWiseGroupFetch = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isAddingNumber, setIsAddingNumber] = useState(false);
+  const [isFetchingComplete, setIsFetchingComplete] = useState(false);
 
   const fetchAllData = () => {
+    if (!filterDistrict || !filterBlock) return;
+
     setIsLoading(true);
     setErrorMessage("");
     const params = {
@@ -34,39 +37,77 @@ const BlockWiseGroupFetch = () => {
       .then((res) => {
         if (res?.data?.data) {
           setTableData(res.data.data);
+          // Check if all numbers are added (customize this based on your needs)
+          const allAdded = res.data.data.every(
+            (item) => item.child_status === "added"
+          );
+          setIsFetchingComplete(allAdded);
         } else {
           setErrorMessage("No data available for the selected filters");
+          setIsFetchingComplete(false);
         }
       })
       .catch((error) => {
         console.error("Error fetching data:", error);
         setErrorMessage("Failed to fetch data. Please try again.");
+        setIsFetchingComplete(false);
       })
       .finally(() => {
         setIsLoading(false);
       });
   };
 
+  // Auto-refresh effect
   useEffect(() => {
-    fetchAllData();
-  }, [filterDistrict, filterBlock]);
+    let intervalId;
 
+    // Only set up auto-refresh if both filters are selected and fetching is not complete
+    if (filterDistrict && filterBlock && !isFetchingComplete) {
+      fetchAllData(); // Initial fetch
+
+      intervalId = setInterval(() => {
+        fetchAllData();
+      }, 30000); // 30 seconds
+
+      return () => {
+        if (intervalId) clearInterval(intervalId);
+      };
+    }
+  }, [filterDistrict, filterBlock, isFetchingComplete]);
+
+  // Update when district is selected
   useEffect(() => {
-    const blocks = districtJson.filter(
-      (item) => item.district === selectedDistrict
-    );
-    setAllBlocks(blocks);
-    setSelectedBlock("");
+    if (selectedDistrict) {
+      const blocks = districtJson.filter(
+        (item) => item.district === selectedDistrict
+      );
+      setAllBlocks(blocks);
+      setSelectedBlock("");
+      setFilterDistrict(selectedDistrict);
+      setFilterBlock(""); // Reset block filter when district changes
+      setIsFetchingComplete(false); // Reset completion status
+    }
   }, [selectedDistrict]);
 
+  // Update when block is selected
   useEffect(() => {
-    const blocks = districtJson.filter(
-      (item) => item.district === filterDistrict
-    );
-    setFilterBlocks(blocks);
-    setFilterBlock("");
+    if (selectedBlock) {
+      setFilterBlock(selectedBlock);
+    }
+  }, [selectedBlock]);
+
+  // Update available blocks when filter district changes
+  useEffect(() => {
+    if (filterDistrict) {
+      const blocks = districtJson.filter(
+        (item) => item.district === filterDistrict
+      );
+      setFilterBlocks(blocks);
+      setFilterBlock("");
+    }
   }, [filterDistrict]);
 
+  // Rest of your functions remain the same...
   const validateNumber = (number) => {
     if (!number) return "Mobile number is required";
     if (!/^\d+$/.test(number)) return "Only digits are allowed";
@@ -201,7 +242,6 @@ const BlockWiseGroupFetch = () => {
 
   const statusCounts = tableData.reduce((acc, item) => {
     acc[item.child_status] = (acc[item.child_status] || 0) + 1;
-    // acc.total++;
     return acc;
   }, {});
 
@@ -387,6 +427,29 @@ const BlockWiseGroupFetch = () => {
               </option>
             </select>
           </div>
+          {!isFetchingComplete && filterDistrict && filterBlock && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                color: "#6b7280",
+                fontSize: "12px",
+                marginRight: "8px",
+              }}
+            >
+              <div
+                style={{
+                  width: "8px",
+                  height: "8px",
+                  borderRadius: "50%",
+                  backgroundColor: "#10B981",
+                  animation: "pulse 1.5s infinite",
+                }}
+              ></div>
+              Active
+            </div>
+          )}
           <button
             style={styles.iconButton}
             onClick={() => fetchAllData()}
@@ -1167,5 +1230,10 @@ const styles = {
   "@keyframes slideIn": {
     "0%": { transform: "translateY(-100%)", opacity: 0 },
     "100%": { transform: "translateY(0)", opacity: 1 },
+  },
+  "@keyframes pulse": {
+    "0%": { opacity: 1 },
+    "50%": { opacity: 0.3 },
+    "100%": { opacity: 1 },
   },
 };

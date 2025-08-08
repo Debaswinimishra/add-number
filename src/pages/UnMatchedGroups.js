@@ -156,6 +156,12 @@ const UnMatchedGroups = () => {
       fontSize: "14px",
       color: "#6c757d",
     },
+    dataCount: {
+      marginBottom: "10px",
+      color: "#6c757d",
+      fontSize: "14px",
+      fontStyle: "italic",
+    },
   };
 
   // Spinner animation
@@ -172,7 +178,7 @@ const UnMatchedGroups = () => {
         setLoading(true);
         setError(null);
         const response = await get_unmatched_groups();
-        console.log("API Response:", response); 
+        console.log("API Response:", response);
 
         const data = Array.isArray(response?.data?.data)
           ? response.data.data
@@ -266,6 +272,11 @@ const UnMatchedGroups = () => {
         <p style={styles.noDataMessage}>No unmatched groups found</p>
       ) : (
         <>
+          <div style={styles.dataCount}>
+            Table contains {groups.length}{" "}
+            {groups.length === 1 ? "group" : "groups"}
+          </div>
+
           <div style={{ overflowX: "auto" }}>
             <table style={styles.table}>
               <thead>
@@ -277,7 +288,7 @@ const UnMatchedGroups = () => {
               </thead>
               <tbody>
                 {currentItems.map((group, index) => (
-                  <tr key={group.id || index} style={styles.tableRow}>
+                  <tr key={group.id || index} style={styles.tableRow}> 
                     <td style={styles.tableCell}>
                       {indexOfFirstItem + index + 1}
                     </td>

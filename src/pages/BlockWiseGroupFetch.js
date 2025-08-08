@@ -126,13 +126,13 @@ const BlockWiseGroupFetch = () => {
     setLoading(true);
     find_group(payload)
       .then((res) => {
-        if (res.status >= 200 && res.status < 300) {
-          return res.json();
+        if (res.status === 200) {
+          return alert("UDISE codes submitted successfully!");
         } else {
           throw new Error(`Server responded with status ${res.status}`);
         }
       })
-      .then((data) => {
+      .then(() => {
         alert("UDISE codes submitted successfully!");
         resetForm();
         setActiveStep(1);
